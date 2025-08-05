@@ -15,8 +15,8 @@
 ### 1. Setup Inicial
 ```bash
 # Clonar repositório
-git clone <seu-repo>
-cd freqtrade-multi
+git clone https://github.com/smpsandro1239/Freqtrade.git
+cd Freqtrade
 
 # Configurar ambiente
 cp .env.example .env
