@@ -1,0 +1,54 @@
+version: "3.9"
+
+x-common: &common
+  image: freqtradeorg/freqtrade:stable
+  volumes:
+    - ./user_data:/freqtrade/user_data
+    - ./.env:/freqtrade/.env:ro
+    - ft_data:/freqtrade/user_data
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    - redis
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  stratA:
+    <<: *common
+    container_name: ft-stratA
+    command: >
+      trade
+      --config user_data/configs/stratA.json
+      --strategy SampleStrategyA
+
+  stratB:
+    <<: *common
+    container_name: ft-stratB
+    command: >
+      trade
+      --config user_data/configs/stratB.json
+      --strategy SampleStrategyB
+
+  telegram_bot:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: ft-telegram
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./user_data:/app/user_data:ro
+    depends_on:
+      - stratA
+      - stratB
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  ft_data:

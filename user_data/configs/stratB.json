@@ -1,0 +1,33 @@
+{
+  "max_open_trades": 3,
+  "stake_currency": "USDT",
+  "stake_amount": 20,
+  "dry_run": true,
+  "strategy": "SampleStrategyB",
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {}
+  },
+  "telegram": {
+    "enabled": true,
+    "token": "${TELEGRAM_TOKEN}",
+    "chat_id": "${TELEGRAM_CHAT_ID}"
+  },
+  "webhook": {
+    "enabled": true,
+    "url": "http://telegram_bot:8080/webhook",
+    "webhookentry": {
+      "value1": "{pair}",
+      "value2": "{stake_amount}",
+      "value3": "{limit}"
+    },
+    "webhookexit": {
+      "value1": "{pair}",
+      "value2": "{profit_amount}",
+      "value3": "{profit_ratio}"
+    }
+  }
+}
