@@ -19,8 +19,9 @@ ALERT_THRESHOLD = 300  # 5 minutes offline before alert
 
 # Services to monitor
 MONITORED_SERVICES = {
-    'ft-stratA': 'Strategy A',
-    'ft-stratB': 'Strategy B', 
+    'ft-stratA': 'Strategy A (RSI)',
+    'ft-stratB': 'Strategy B (RSI)', 
+    'ft-waveHyperNW': 'WaveHyperNW Strategy',
     'ft-telegram': 'Telegram Bot',
     'freqtrade_redis_1': 'Redis Cache'
 }

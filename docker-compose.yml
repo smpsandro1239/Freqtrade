@@ -34,6 +34,14 @@ services:
       --config user_data/configs/stratB.json
       --strategy SampleStrategyB
 
+  waveHyperNW:
+    <<: *common
+    container_name: ft-waveHyperNW
+    command: >
+      trade
+      --config user_data/configs/waveHyperNW.json
+      --strategy WaveHyperNWStrategy
+
   telegram_bot:
     build:
       context: ./scripts

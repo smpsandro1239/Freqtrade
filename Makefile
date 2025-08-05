@@ -53,7 +53,10 @@ logs-telegram: ## Show only Telegram bot logs
 	@docker compose logs -f telegram_bot
 
 logs-strat: ## Show logs from trading strategies
-	@docker compose logs -f stratA stratB
+	@docker compose logs -f stratA stratB waveHyperNW
+
+logs-wave: ## Show logs from WaveHyperNW strategy only
+	@docker compose logs -f waveHyperNW
 
 logs-health: ## Show health monitor logs
 	@docker compose logs -f health_monitor

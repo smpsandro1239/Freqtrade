@@ -124,6 +124,27 @@ TELEGRAM_TOKEN=123456:ABC-DEF
 TELEGRAM_CHAT_ID=-1001234567890
 ```
 
+### Estratégias Incluídas
+
+#### 📊 **Estratégias Básicas** (para demonstração)
+- **SampleStrategyA/B**: RSI simples (timeframe 15m)
+
+#### 🌊 **WaveHyperNWStrategy** (estratégia avançada)
+- **Timeframe**: 5m (alta frequência)
+- **Indicadores principais**:
+  - 📈 **WaveTrend**: Oscilador principal para sinais
+  - 🧠 **Nadaraya-Watson**: Filtro de tendência inteligente
+  - 📊 **EMAs**: 8, 21, 50 períodos
+  - 📊 **RSI**: Confirmação de momentum
+  - 📊 **Volume**: Análise de liquidez
+- **Proteções**:
+  - 🛡️ StoplossGuard (4 trades limit)
+  - ⏰ CooldownPeriod configurável
+- **Features especiais**:
+  - 🎯 Trailing stop dinâmico baseado em profit
+  - 📱 Notificações detalhadas no Telegram
+  - ⚖️ Risk management integrado
+
 ### Adicionar Nova Estratégia
 
 1. **Criar estratégia**: `user_data/strategies/MinhaEstrategia.py`
