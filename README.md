@@ -129,21 +129,23 @@ TELEGRAM_CHAT_ID=-1001234567890
 #### 📊 **Estratégias Básicas** (para demonstração)
 - **SampleStrategyA/B**: RSI simples (timeframe 15m)
 
-#### 🌊 **WaveHyperNWStrategy** (estratégia avançada)
+#### 🌊 **WaveHyperNWStrategy** (estratégia otimizada)
 - **Timeframe**: 5m (alta frequência)
+- **Configuração otimizada**: 3x mais sinais de entrada
 - **Indicadores principais**:
-  - 📈 **WaveTrend**: Oscilador principal para sinais
-  - 🧠 **Nadaraya-Watson**: Filtro de tendência inteligente
+  - 📈 **WaveTrend**: Oscilador principal (thresholds relaxados)
+  - 🧠 **Nadaraya-Watson**: Bandas expandidas para mais oportunidades
   - 📊 **EMAs**: 8, 21, 50 períodos
-  - 📊 **RSI**: Confirmação de momentum
-  - 📊 **Volume**: Análise de liquidez
+  - 📊 **RSI**: Threshold aumentado (40→45)
+  - 📊 **Volume**: Requisito reduzido (0.4→0.25)
 - **Proteções**:
   - 🛡️ StoplossGuard (4 trades limit)
   - ⏰ CooldownPeriod configurável
-- **Features especiais**:
-  - 🎯 Trailing stop dinâmico baseado em profit
-  - 📱 Notificações detalhadas no Telegram
-  - ⚖️ Risk management integrado
+- **Otimizações**:
+  - 🎯 Max trades: 6 (era 4)
+  - 💰 Stake: 20 USDT (balanceado)
+  - 📊 Condições de entrada relaxadas
+  - 🚀 Maior frequência de sinais
 
 ### Adicionar Nova Estratégia
 

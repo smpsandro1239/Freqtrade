@@ -1,7 +1,7 @@
 {
-  "max_open_trades": 4,
+  "max_open_trades": 6,
   "stake_currency": "USDT",
-  "stake_amount": 25,
+  "stake_amount": 20,
   "tradable_balance_ratio": 0.99,
   "fiat_display_currency": "USD",
   "dry_run": true,
@@ -138,7 +138,7 @@
     "username": "",
     "password": ""
   },
-  "bot_name": "WaveHyperNW",
+  "bot_name": "WaveHyperNW_Otimizada",
   "initial_state": "running",
   "force_entry_enable": false,
   "internals": {
