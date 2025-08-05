@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.risk.txt .
+RUN pip install -r requirements.risk.txt
+
+COPY risk_manager.py .
+COPY freqtrade_stats.py .
+
+CMD ["python", "risk_manager.py"]

@@ -49,6 +49,31 @@ services:
       - stratB
     restart: unless-stopped
 
+  health_monitor:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.monitor
+    container_name: ft-health-monitor
+    env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - telegram_bot
+    restart: unless-stopped
+
+  risk_manager:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.risk
+    container_name: ft-risk-manager
+    env_file: .env
+    volumes:
+      - ./user_data:/app/user_data
+      - ./backups:/app/backups
+    depends_on:
+      - telegram_bot
+    restart: unless-stopped
+
 volumes:
   redis_data:
   ft_data:

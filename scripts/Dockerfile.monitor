@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install Docker CLI for container monitoring
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.monitor.txt .
+RUN pip install -r requirements.monitor.txt
+
+COPY health_monitor.py .
+
+CMD ["python", "health_monitor.py"]

@@ -1,0 +1,72 @@
+name: Daily Backtest Report
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC (adjust for your timezone)
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install freqtrade[all]
+          pip install python-telegram-bot
+      
+      - name: Download historical data
+        run: |
+          # Download last 30 days of data for backtesting
+          freqtrade download-data \
+            --exchange binance \
+            --pairs BTC/USDT ETH/USDT ADA/USDT DOT/USDT \
+            --timeframes 15m 1h \
+            --days 30 \
+            --userdir user_data
+      
+      - name: Run backtests for all strategies
+        run: |
+          mkdir -p backtest_results
+          
+          # Backtest each strategy
+          for config in user_data/configs/*.json; do
+            strategy_name=$(basename "$config" .json)
+            echo "Running backtest for $strategy_name..."
+            
+            freqtrade backtesting \
+              --config "$config" \
+              --timerange=-30 \
+              --export trades \
+              --export-filename "backtest_results/${strategy_name}_backtest.json" \
+              --userdir user_data \
+              > "backtest_results/${strategy_name}_output.txt" 2>&1 || true
+          done
+      
+      - name: Generate backtest report
+        run: |
+          python scripts/generate_backtest_report.py
+        env:
+          TELEGRAM_TOKEN: ${{ env.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ env.TELEGRAM_CHAT_ID }}
+      
+      - name: Upload backtest results
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-results-${{ github.run_number }}
+          path: backtest_results/
+          retention-days: 30
