@@ -16,7 +16,17 @@
 
 ## 🚀 Quick Start
 
-### 1. Setup Inicial
+### 🪟 **Windows (Recomendado)**
+```powershell
+# 1. Baixe um dos scripts .bat do repositório
+# 2. Abra PowerShell como Administrador
+# 3. Execute:
+.\run.ps1 setup     # Instalação completa automática
+# OU
+.\run.ps1           # Menu interativo
+```
+
+### 🐧 **Linux/Mac**
 ```bash
 # Clonar repositório
 git clone https://github.com/smpsandro1239/Freqtrade.git
@@ -25,46 +35,31 @@ cd Freqtrade
 # Configurar ambiente
 cp .env.example .env
 # Editar .env com suas credenciais (Telegram + Exchange)
-```
 
-### 2. Subir Containers
-```bash
 # Iniciar tudo
 docker compose up -d --build
-
-# Ver logs
-make logs-telegram
 ```
 
 ### 3. Comandos Úteis
 
+#### 🪟 **Windows (PowerShell)**
+```powershell
+.\run.ps1 status       # Ver status atual
+.\run.ps1 logs         # Ver logs em tempo real
+.\run.ps1 restart      # Reiniciar sistema
+.\run.ps1 dry          # Modo simulação
+.\run.ps1 live         # Modo real (CUIDADO!)
+.\run.ps1 backup       # Backup manual
+```
+
+#### 🐧 **Linux/Mac (Make)**
 ```bash
-# Ver status atual (dry-run vs live + stakes)
-make status
-
-# Alternar para modo live (CUIDADO!)
-make live
-
-# Voltar para dry-run
-make dry
-
-# Deploy com zero-downtime
-make deploy
-
-# Ver saúde dos serviços
-make health
-
-# Ver logs específicos
-make logs-strat        # Estratégias
+make status            # Ver status atual
 make logs-telegram     # Bot Telegram
-make logs-health       # Monitor de saúde
-make logs-risk         # Risk manager
-
-# Backup manual
-make backup
-
-# Limpeza do sistema
-make clean
+make logs-strat        # Estratégias
+make deploy            # Deploy seguro
+make health            # Saúde dos serviços
+make backup            # Backup manual
 ```
 
 ## 📊 Sistema de Monitoramento
