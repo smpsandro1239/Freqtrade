@@ -73,10 +73,22 @@ goto menu
 echo.
 echo 🚀 Executando instalação completa...
 echo.
-if exist "setup_freqtrade.bat" (
+if exist "install_auto.bat" (
+    call install_auto.bat
+) else if exist "setup_freqtrade.bat" (
+    echo ⚠️  Usando instalador alternativo (requer execução manual como administrador)
+    echo.
+    echo 💡 Para instalação automática completa:
+    echo 1. Feche este script
+    echo 2. Clique com botão direito em setup_freqtrade.bat
+    echo 3. Selecione "Executar como administrador"
+    echo.
     call setup_freqtrade.bat
 ) else (
-    echo ❌ Arquivo setup_freqtrade.bat não encontrado
+    echo ❌ Nenhum arquivo de instalação encontrado
+    echo.
+    echo 💡 Baixe os arquivos do repositório:
+    echo https://github.com/smpsandro1239/Freqtrade
 )
 pause
 goto menu
