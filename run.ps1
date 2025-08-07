@@ -73,10 +73,10 @@ function Show-VpsHelp {
     Write-Host ".\setup_vps.bat [TELEGRAM_TOKEN] [CHAT_ID] [EXCHANGE_KEY] [SECRET]" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Exemplo com exchange:" -ForegroundColor Yellow
-    Write-Host '.\setup_vps.bat "123456:ABC-DEF" "-1001234567890" "api_key" "api_secret"' -ForegroundColor Gray
+    Write-Host ".\setup_vps.bat `"123456:ABC-DEF`" `"-1001234567890`" `"api_key`" `"api_secret`"" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Exemplo só dry-run:" -ForegroundColor Yellow
-    Write-Host '.\setup_vps.bat "123456:ABC-DEF" "-1001234567890" "" ""' -ForegroundColor Gray
+    Write-Host ".\setup_vps.bat `"123456:ABC-DEF`" `"-1001234567890`" `"`" `"`"" -ForegroundColor Gray
     Write-Host ""
 }
 
