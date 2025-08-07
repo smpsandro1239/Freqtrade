@@ -1,0 +1,40 @@
+🚀 COMO INSTALAR O FREQTRADE MULTI-STRATEGY
+
+═══════════════════════════════════════════════════════════════════
+
+📋 OPÇÕES DE INSTALAÇÃO:
+
+1️⃣ INSTALAÇÃO AUTOMÁTICA (RECOMENDADA)
+   • Clique com botão direito em "install_simple.bat"
+   • Selecione "Executar como administrador"
+   • Siga as instruções na tela
+
+2️⃣ MENU INTERATIVO
+   • Execute "start.bat"
+   • Escolha opção 1 (Instalação Completa)
+   • Siga as instruções
+
+3️⃣ VERIFICAR SE FUNCIONOU
+   • Execute "test_install.bat"
+   • Deve mostrar tudo ✅ (verde)
+
+═══════════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE:
+• É necessário privilégios de administrador
+• Conexão com internet é obrigatória
+• Instalação leva 10-15 minutos
+
+💡 TELEGRAM:
+• Crie bot com @BotFather no Telegram
+• Tenha TOKEN e CHAT_ID prontos
+
+🎯 RESULTADO:
+• 3 estratégias de trading funcionando
+• Alertas automáticos no Telegram
+• Sistema completo de monitoramento
+
+═══════════════════════════════════════════════════════════════════
+
+🔗 Documentação completa: README.md
+🆘 Problemas: COMO_EXECUTAR.md

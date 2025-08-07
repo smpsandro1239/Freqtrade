@@ -73,16 +73,25 @@ goto menu
 echo.
 echo 🚀 Executando instalação completa...
 echo.
-if exist "install_auto.bat" (
+if exist "install_simple.bat" (
+    echo 💡 INSTRUÇÕES PARA INSTALAÇÃO:
+    echo.
+    echo 1. Feche este menu
+    echo 2. Clique com botão direito em "install_simple.bat"
+    echo 3. Selecione "Executar como administrador"
+    echo 4. Siga as instruções na tela
+    echo.
+    echo ⚠️  É necessário privilégios de administrador para instalar Docker e Git
+    echo.
+    set /p "continue=Pressione Enter para continuar ou 'n' para voltar ao menu: "
+    if /i "!continue!"=="n" goto menu
+    
+    echo.
+    echo 🔄 Tentando executar instalador...
+    call install_simple.bat
+) else if exist "install_auto.bat" (
     call install_auto.bat
 ) else if exist "setup_freqtrade.bat" (
-    echo ⚠️  Usando instalador alternativo (requer execução manual como administrador)
-    echo.
-    echo 💡 Para instalação automática completa:
-    echo 1. Feche este script
-    echo 2. Clique com botão direito em setup_freqtrade.bat
-    echo 3. Selecione "Executar como administrador"
-    echo.
     call setup_freqtrade.bat
 ) else (
     echo ❌ Nenhum arquivo de instalação encontrado
