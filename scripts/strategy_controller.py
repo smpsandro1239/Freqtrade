@@ -12,8 +12,26 @@ from pathlib import Path
 
 class StrategyController:
     def __init__(self):
-        self.docker_client = docker.from_env()
+        self.docker_client = self._init_docker_client()
         self.project_root = Path("/app/project")
+    
+    def _init_docker_client(self):
+        """Inicializa cliente Docker com tratamento de erro"""
+        try:
+            if os.name == 'nt':  # Windows
+                try:
+                    client = docker.DockerClient(base_url='npipe:////./pipe/docker_engine')
+                except:
+                    client = docker.from_env()
+            else:
+                client = docker.from_env()
+            
+            # Testar conexão
+            client.ping()
+            return client
+        except Exception as e:
+            print(f"⚠️ Docker não disponível no StrategyController: {e}")
+            return None
         
     def get_strategy_config(self, strategy_id: str) -> Dict:
         """Obter configuração de uma estratégia"""
@@ -59,7 +77,7 @@ class StrategyController:
         try:
             result = subprocess.run([
                 'docker', 'compose', 'logs', '--tail', str(lines), strategy_id
-            ], capture_output=True, text=True, cwd=self.project_root)
+            ], capture_output=True, text=True, cwd="/app/project")
             
             if result.returncode == 0:
                 return result.stdout.split('\n')

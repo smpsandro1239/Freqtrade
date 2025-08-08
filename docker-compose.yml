@@ -98,7 +98,6 @@ services:
       - stratB
       - waveHyperNW
     restart: unless-stopped
-    working_dir: /app/project
 
 volumes:
   redis_data:
