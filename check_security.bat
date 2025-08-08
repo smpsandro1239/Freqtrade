@@ -120,10 +120,10 @@ if %errorLevel% equ 0 (
 echo.
 echo 📚 Verificando histórico do Git:
 
-git log --all --full-history -- .env >nul 2>&1
-if %errorLevel% equ 0 (
-    echo 🚨 CRÍTICO: .env foi commitado anteriormente!
-    echo    💡 Considere limpar o histórico do Git
+git ls-files | findstr /E ".env" >nul 2>&1
+if !errorLevel! equ 0 (
+    echo 🚨 CRÍTICO: .env está sendo rastreado pelo Git!
+    echo    💡 Execute: git rm --cached .env
     set /a ISSUES_FOUND+=1
 )
 
@@ -153,7 +153,7 @@ echo ║                            📊 RELATÓRIO FINAL                       
 echo ╚══════════════════════════════════════════════════════════════════════════════╝
 echo.
 
-if %ISSUES_FOUND% equ 0 (
+if !ISSUES_FOUND! equ 0 (
     echo ✅ SEGURANÇA OK: Nenhum problema crítico encontrado
     echo.
     echo 💡 Recomendações:
@@ -162,7 +162,7 @@ if %ISSUES_FOUND% equ 0 (
     echo • Faça backups locais dos dados sensíveis
     echo • Use variáveis de ambiente para credenciais
 ) else (
-    echo 🚨 ATENÇÃO: %ISSUES_FOUND% problemas de segurança encontrados!
+    echo 🚨 ATENÇÃO: !ISSUES_FOUND! problemas de segurança encontrados!
     echo.
     echo 🔧 AÇÕES RECOMENDADAS:
     echo.
@@ -174,10 +174,10 @@ if %ISSUES_FOUND% equ 0 (
     echo 2. VERIFICAR .gitignore:
     echo    Certifique-se que todos os arquivos sensíveis estão listados
     echo.
-    echo 3. LIMPAR HISTÓRICO (se necessário):
+    echo 3. LIMPAR HISTÓRICO ^(se necessário^):
     echo    git filter-branch --force --index-filter "git rm --cached --ignore-unmatch .env" --prune-empty --tag-name-filter cat -- --all
     echo.
-    echo 4. FORÇAR PUSH (CUIDADO!):
+    echo 4. FORÇAR PUSH ^(CUIDADO!^):
     echo    git push origin --force --all
     echo.
     echo ⚠️  IMPORTANTE: Faça backup antes de executar comandos de limpeza!
