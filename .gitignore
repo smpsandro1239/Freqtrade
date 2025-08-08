@@ -1,0 +1,376 @@
+# ============================================================================
+# FREQTRADE MULTI-STRATEGY - GITIGNORE ULTRA SEGURO
+# Protege TODAS as credenciais e dados sensíveis
+# ============================================================================
+
+# ============================================================================
+# 🔐 CREDENCIAIS E CONFIGURAÇÕES SENSÍVEIS (PRIORIDADE MÁXIMA)
+# ============================================================================
+
+# Arquivos de ambiente com credenciais
+.env
+.env.*
+!.env.example
+*.env
+env.local
+env.production
+env.staging
+env.development
+
+# Configurações com chaves de API
+config.json
+config.*.json
+*config*.json
+!*config*.example.json
+
+# Arquivos de configuração do usuário (podem conter credenciais)
+user_data/configs/*.json
+!user_data/configs/*.example.json
+user_data/config/
+user_data/private/
+
+# Chaves SSH e certificados
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.ssh/
+.ssh/
+
+# ============================================================================
+# 💰 DADOS DE TRADING E FINANCEIROS
+# ============================================================================
+
+# Bancos de dados do Freqtrade (contêm histórico de trades)
+*.sqlite
+*.sqlite3
+*.db
+tradesv3.sqlite
+tradesv3.dryrun.sqlite
+user_data/*.sqlite*
+user_data/*.db
+
+# Logs de trading (podem conter informações sensíveis)
+*.log
+logs/
+user_data/logs/
+freqtrade.log*
+setup.log
+install*.log
+deploy.log
+
+# Backups (podem conter dados sensíveis)
+backups/
+backup/
+*.backup
+*.bak
+user_data/backups/
+
+# Dados de mercado baixados
+user_data/data/
+market_data/
+*.json.gz
+*.feather
+*.parquet
+
+# Notebooks com análises (podem conter dados sensíveis)
+user_data/notebooks/*.ipynb
+*.ipynb_checkpoints/
+user_data/notebooks/data/
+
+# ============================================================================
+# 🐳 DOCKER E CONTAINERS
+# ============================================================================
+
+# Volumes Docker (podem conter dados persistentes)
+docker-volumes/
+volumes/
+
+# Arquivos de override Docker (podem conter credenciais)
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.prod.yml
+docker-compose.*.yml
+!docker-compose.yml
+!docker-compose.example.yml
+
+# Dados persistentes de containers
+redis_data/
+postgres_data/
+mysql_data/
+
+# ============================================================================
+# 🔧 ARQUIVOS DE SISTEMA E TEMPORÁRIOS
+# ============================================================================
+
+# Arquivos temporários Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.tmp
+*.temp
+
+# Arquivos temporários Linux/Mac
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+
+# Arquivos de sistema
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# ============================================================================
+# 🐍 PYTHON E DEPENDÊNCIAS
+# ============================================================================
+
+# Ambientes virtuais Python
+venv/
+env/
+ENV/
+.venv/
+.env/
+.python-version
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# PyCharm
+.idea/
+
+# ============================================================================
+# 📊 DADOS DE ANÁLISE E RELATÓRIOS
+# ============================================================================
+
+# Relatórios de backtest (podem conter estratégias proprietárias)
+user_data/backtest_results/
+backtest_results/
+*.html
+*.json
+!user_data/strategies/*.py.example
+
+# Dados de hyperopt
+user_data/hyperopt_results/
+hyperopt_results/
+
+# Plots e gráficos
+user_data/plot/
+plots/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+!docs/*.png
+!docs/*.jpg
+
+# ============================================================================
+# 🔄 ARQUIVOS DE CACHE E TEMPORÁRIOS
+# ============================================================================
+
+# Cache de aplicações
+.cache/
+cache/
+tmp/
+temp/
+
+# Node modules (se houver frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ============================================================================
+# 📦 ARQUIVOS DE INSTALAÇÃO E DOWNLOADS
+# ============================================================================
+
+# Instaladores baixados
+*.exe
+*.msi
+*.dmg
+*.pkg
+DockerInstaller.exe
+GitInstaller.exe
+
+# Arquivos comprimidos
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tar.bz2
+
+# ============================================================================
+# 🚨 ARQUIVOS DE SEGURANÇA ESPECÍFICOS
+# ============================================================================
+
+# Tokens e chaves específicas
+telegram_token.txt
+api_keys.txt
+secrets.txt
+credentials.txt
+passwords.txt
+
+# Arquivos de configuração de exchanges
+binance_config.json
+coinbase_config.json
+kraken_config.json
+exchange_*.json
+
+# Arquivos de wallet
+wallet.dat
+*.wallet
+keystore/
+
+# Arquivos de sessão
+session.json
+*.session
+
+# ============================================================================
+# 📋 ARQUIVOS DE CONFIGURAÇÃO PESSOAL
+# ============================================================================
+
+# Configurações pessoais do usuário
+.user_settings
+user_settings.json
+personal_config.json
+my_config.json
+
+# Arquivos de configuração do IDE
+.vscode/settings.json
+.idea/workspace.xml
+
+# ============================================================================
+# 🔍 ARQUIVOS DE MONITORAMENTO E DEBUG
+# ============================================================================
+
+# Dumps de memória
+*.dmp
+core.*
+crash_*.log
+
+# Arquivos de profiling
+*.prof
+*.profile
+
+# Arquivos de debug
+debug.log
+error.log
+*.debug
+
+# ============================================================================
+# 📱 ARQUIVOS ESPECÍFICOS DO TELEGRAM
+# ============================================================================
+
+# Sessões do Telegram
+*.session
+telegram_session.*
+
+# Cache do bot
+bot_cache/
+telegram_cache/
+
+# ============================================================================
+# 💾 ARQUIVOS DE BACKUP AUTOMÁTICO
+# ============================================================================
+
+# Backups automáticos
+*_backup_*
+backup_*
+*.backup.*
+auto_backup/
+
+# Snapshots
+snapshots/
+*.snapshot
+
+# ============================================================================
+# 🌐 ARQUIVOS DE REDE E CERTIFICADOS
+# ============================================================================
+
+# Certificados SSL
+*.crt
+*.pem
+*.key
+ssl/
+certs/
+
+# Arquivos de configuração de proxy
+proxy.conf
+*.proxy
+
+# ============================================================================
+# 📈 DADOS DE PERFORMANCE E MÉTRICAS
+# ============================================================================
+
+# Métricas de performance
+performance_*.json
+metrics_*.json
+stats_*.json
+
+# Dados de monitoramento
+monitoring/
+metrics/
+
+# ============================================================================
+# 🔒 ARQUIVOS CRIPTOGRAFADOS
+# ============================================================================
+
+# Arquivos criptografados
+*.gpg
+*.asc
+*.encrypted
+*.enc
+
+# Keystores
+*.jks
+*.keystore
+
+# ============================================================================
+# OBSERVAÇÕES IMPORTANTES DE SEGURANÇA
+# ============================================================================
+
+# NUNCA REMOVA ESTAS LINHAS:
+# - .env (contém todas as credenciais)
+# - *.sqlite (contém histórico de trades)
+# - backups/ (podem conter dados sensíveis)
+# - *.log (podem conter informações de debug sensíveis)
+# - user_data/configs/*.json (contém configurações com possíveis credenciais)
+
+# SE PRECISAR ADICIONAR EXCEÇÕES, USE SEMPRE O PADRÃO:
+# pasta_sensivel/
+# !pasta_sensivel/arquivo_exemplo.txt
+
+# LEMBRE-SE: É MELHOR SER EXCESSIVAMENTE CAUTELOSO
+# DO QUE VAZAR UMA ÚNICA CREDENCIAL!
