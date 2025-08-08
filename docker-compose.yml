@@ -82,6 +82,24 @@ services:
       - telegram_bot
     restart: unless-stopped
 
+  telegram_commander:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.commander
+    container_name: ft-telegram-commander
+    env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./user_data:/app/user_data:ro
+      - .:/app/project:ro
+    depends_on:
+      - telegram_bot
+      - stratA
+      - stratB
+      - waveHyperNW
+    restart: unless-stopped
+    working_dir: /app/project
+
 volumes:
   redis_data:
   ft_data:

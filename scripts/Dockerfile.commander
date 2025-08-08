@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar Docker CLI para controle de containers
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.commander.txt .
+RUN pip install -r requirements.commander.txt
+
+COPY telegram_commander.py .
+COPY freqtrade_stats.py .
+
+CMD ["python", "telegram_commander.py"]
