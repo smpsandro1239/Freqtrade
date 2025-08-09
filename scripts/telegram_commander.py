@@ -205,45 +205,53 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     logger.info(f"🔘 Callback recebido: {data}")
     
-    if data == "status_all":
-        await show_status_all(query)
-    elif data == "control_menu":
-        await show_control_menu(query)
-    elif data == "stats_menu":
-        await show_stats_menu(query)
-    elif data == "config_menu":
-        await show_config_menu(query)
-    elif data == "help":
-        await show_help_menu(query)
-    elif data == "main_menu":
-        await show_main_menu(query)
-    elif data.startswith("strategy_"):
-        strategy_id = data.replace("strategy_", "")
-        await show_strategy_control(query, strategy_id)
-    elif data.startswith("action_"):
-        parts = data.split("_", 2)
-        action = parts[1]
-        strategy_id = parts[2]
-        await execute_strategy_action(query, strategy_id, action)
-    elif data.startswith("logs_"):
-        strategy_id = data.replace("logs_", "")
-        await show_strategy_logs(query, strategy_id)
-    elif data.startswith("config_"):
-        strategy_id = data.replace("config_", "")
-        await show_strategy_config(query, strategy_id)
-    elif data.startswith("stats_"):
-        strategy_id = data.replace("stats_", "")
-        await show_strategy_stats(query, strategy_id)
-    elif data.startswith("toggle_"):
-        strategy_id = data.replace("toggle_", "")
-        await toggle_strategy_dry_run(query, strategy_id)
-    elif data.startswith("confirm_live_"):
-        strategy_id = data.replace("confirm_live_", "")
-        await execute_mode_change(query, strategy_id, False)
-    elif data == "stats_general":
-        await show_general_stats(query)
-    else:
-        await query.edit_message_text("❌ Comando não reconhecido.")
+    try:
+        if data == "status_all":
+            await show_status_all(query)
+        elif data == "control_menu":
+            await show_control_menu(query)
+        elif data == "stats_menu":
+            await show_stats_menu(query)
+        elif data == "config_menu":
+            await show_config_menu(query)
+        elif data == "help":
+            await show_help_menu(query)
+        elif data == "main_menu":
+            await show_main_menu(query)
+        elif data.startswith("strategy_"):
+            strategy_id = data.replace("strategy_", "")
+            await show_strategy_control(query, strategy_id)
+        elif data.startswith("action_"):
+            parts = data.split("_", 2)
+            action = parts[1]
+            strategy_id = parts[2]
+            await execute_strategy_action(query, strategy_id, action)
+        elif data.startswith("logs_"):
+            strategy_id = data.replace("logs_", "")
+            await show_strategy_logs(query, strategy_id)
+        elif data.startswith("config_"):
+            strategy_id = data.replace("config_", "")
+            await show_strategy_config(query, strategy_id)
+        elif data.startswith("stats_"):
+            strategy_id = data.replace("stats_", "")
+            await show_strategy_stats(query, strategy_id)
+        elif data.startswith("toggle_"):
+            strategy_id = data.replace("toggle_", "")
+            await toggle_strategy_dry_run(query, strategy_id)
+        elif data.startswith("confirm_live_"):
+            strategy_id = data.replace("confirm_live_", "")
+            await execute_mode_change(query, strategy_id, False)
+        elif data == "stats_general":
+            await show_general_stats(query)
+        else:
+            await query.edit_message_text("❌ Comando não reconhecido.")
+            
+    except NameError as e:
+        logger.error(f"🚨 NameError no callback {data}: {e}")
+        await query.edit_message_text(f"❌ Erro interno: Função não encontrada.\n\nCallback: {data}\nErro: {str(e)}")
+    except Exception as e:
+        logger.error(f"🚨 Erro no callback {data}: {e}")
+        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
 
 async def show_status_all(query):
     """Mostrar status detalhado de todas as estratégias"""
@@ -396,6 +404,21 @@ Escolha uma opção abaixo para começar:
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler para capturar erros"""
+    logger.error(f"🚨 Erro capturado: {context.error}")
+    logger.error(f"📍 Update: {update}")
+    
+    # Tentar enviar mensagem de erro para o usuário
+    try:
+        if update and update.effective_chat:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Ocorreu um erro interno. Por favor, tente novamente."
+            )
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem de erro: {e}")
+
 def main():
     """Função principal"""
     if not TOKEN:
@@ -418,6 +441,9 @@ def main():
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CallbackQueryHandler(button_callback))
+    
+    # Adicionar handler de erro
+    application.add_error_handler(error_handler)
     
     # Iniciar bot
     logger.info("🤖 Telegram Commander iniciado!")
