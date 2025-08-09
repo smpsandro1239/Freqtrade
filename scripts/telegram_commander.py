@@ -206,43 +206,195 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"🔘 Callback recebido: {data}")
     
     if data == "status_all":
-        message = "📊 <b>STATUS DETALHADO</b>\n\n"
-        
-        for strategy_id, strategy_info in STRATEGIES.items():
-            status = await commander.get_container_status(strategy_info['container'])
-            status_emoji = "🟢" if status['running'] else "🔴"
-            message += f"{status_emoji} <b>{strategy_info['name']}</b>\n"
-            message += f"   Status: {status['status']}\n"
-            message += f"   Container: {strategy_info['container']}\n"
-            message += f"   Descrição: {strategy_info['description']}\n\n"
-        
-        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
-    
+        await show_status_all(query)
+    elif data == "control_menu":
+        await show_control_menu(query)
+    elif data == "stats_menu":
+        await show_stats_menu(query)
+    elif data == "config_menu":
+        await show_config_menu(query)
+    elif data == "help":
+        await show_help_menu(query)
     elif data == "main_menu":
-        keyboard = [
-            [InlineKeyboardButton("📊 Status Geral", callback_data="status_all")],
-            [InlineKeyboardButton("🎮 Controlar Estratégias", callback_data="control_menu")],
-            [InlineKeyboardButton("📈 Estatísticas", callback_data="stats_menu")],
-            [InlineKeyboardButton("⚙️ Configurações", callback_data="config_menu")],
-            [InlineKeyboardButton("🆘 Ajuda", callback_data="help")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        await show_main_menu(query)
+    elif data.startswith("strategy_"):
+        strategy_id = data.replace("strategy_", "")
+        await show_strategy_control(query, strategy_id)
+    elif data.startswith("action_"):
+        parts = data.split("_", 2)
+        action = parts[1]
+        strategy_id = parts[2]
+        await execute_strategy_action(query, strategy_id, action)
+    elif data.startswith("logs_"):
+        strategy_id = data.replace("logs_", "")
+        await show_strategy_logs(query, strategy_id)
+    elif data.startswith("config_"):
+        strategy_id = data.replace("config_", "")
+        await show_strategy_config(query, strategy_id)
+    elif data.startswith("stats_"):
+        strategy_id = data.replace("stats_", "")
+        await show_strategy_stats(query, strategy_id)
+    elif data.startswith("toggle_"):
+        strategy_id = data.replace("toggle_", "")
+        await toggle_strategy_dry_run(query, strategy_id)
+    elif data.startswith("confirm_live_"):
+        strategy_id = data.replace("confirm_live_", "")
+        await execute_mode_change(query, strategy_id, False)
+    elif data == "stats_general":
+        await show_general_stats(query)
+    else:
+        await query.edit_message_text("❌ Comando não reconhecido.")
+
+async def show_status_all(query):
+    """Mostrar status detalhado de todas as estratégias"""
+    message = "📊 <b>STATUS DETALHADO</b>\n\n"
+    
+    for strategy_id, strategy_info in STRATEGIES.items():
+        status = await commander.get_container_status(strategy_info['container'])
+        summary = commander.controller.get_strategy_summary(strategy_id)
         
-        message = """
+        status_emoji = "🟢" if status['running'] else "🔴"
+        mode_emoji = "🟡" if summary.get('dry_run', True) else "🔴"
+        mode_text = "DRY" if summary.get('dry_run', True) else "LIVE"
+        
+        message += f"{status_emoji} <b>{strategy_info['name']}</b>\n"
+        message += f"   Status: {status['status']}\n"
+        message += f"   Modo: {mode_emoji} {mode_text}\n"
+        message += f"   Stake: {summary.get('stake_amount', 0)} {summary.get('stake_currency', 'USDT')}\n"
+        message += f"   Max Trades: {summary.get('max_open_trades', 0)}\n"
+        message += f"   Timeframe: {summary.get('timeframe', '15m')}\n\n"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔄 Atualizar", callback_data="status_all")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_control_menu(query):
+    """Mostrar menu de controle de estratégias"""
+    message = "🎮 <b>CONTROLAR ESTRATÉGIAS</b>\n\nEscolha uma estratégia para controlar:\n\n"
+    
+    keyboard = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        status = await commander.get_container_status(strategy_info['container'])
+        status_emoji = "🟢" if status['running'] else "🔴"
+        
+        keyboard.append([
+            InlineKeyboardButton(
+                f"{status_emoji} {strategy_info['name']}", 
+                callback_data=f"strategy_{strategy_id}"
+            )
+        ])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_stats_menu(query):
+    """Mostrar menu de estatísticas"""
+    message = "📈 <b>ESTATÍSTICAS</b>\n\nEscolha uma estratégia para ver estatísticas:\n\n"
+    
+    keyboard = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        keyboard.append([
+            InlineKeyboardButton(
+                f"📊 {strategy_info['name']}", 
+                callback_data=f"stats_{strategy_id}"
+            )
+        ])
+    
+    keyboard.append([
+        InlineKeyboardButton("📈 Resumo Geral", callback_data="stats_general")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_config_menu(query):
+    """Mostrar menu de configurações"""
+    message = "⚙️ <b>CONFIGURAÇÕES</b>\n\nEscolha uma estratégia para configurar:\n\n"
+    
+    keyboard = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        keyboard.append([
+            InlineKeyboardButton(
+                f"⚙️ {strategy_info['name']}", 
+                callback_data=f"config_{strategy_id}"
+            )
+        ])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_help_menu(query):
+    """Mostrar menu de ajuda"""
+    message = """
+🆘 <b>AJUDA - FREQTRADE COMMANDER</b>
+
+<b>📊 Status Geral:</b>
+• Ver status de todas as estratégias
+• Informações de modo (DRY/LIVE)
+• Configurações atuais
+
+<b>🎮 Controlar Estratégias:</b>
+• ▶️ Iniciar estratégia
+• ⏹️ Parar estratégia
+• 🔄 Reiniciar estratégia
+• 📋 Ver logs em tempo real
+
+<b>📈 Estatísticas:</b>
+• Performance individual
+• Trades realizados
+• P&L (Profit & Loss)
+• Win Rate
+
+<b>⚙️ Configurações:</b>
+• Alternar DRY-RUN ↔ LIVE
+• Modificar stake amount
+• Ajustar max trades
+• Ver configuração completa
+
+<b>🔐 Segurança:</b>
+• Apenas usuários autorizados
+• Confirmação para ações críticas
+• Todas as ações são logadas
+
+<b>ℹ️ Símbolos:</b>
+• 🟢 = Rodando • 🔴 = Parado
+• 🟡 = DRY-RUN • 🔴 = LIVE
+    """
+    
+    keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_main_menu(query):
+    """Mostrar menu principal"""
+    keyboard = [
+        [InlineKeyboardButton("📊 Status Geral", callback_data="status_all")],
+        [InlineKeyboardButton("🎮 Controlar Estratégias", callback_data="control_menu")],
+        [InlineKeyboardButton("📈 Estatísticas", callback_data="stats_menu")],
+        [InlineKeyboardButton("⚙️ Configurações", callback_data="config_menu")],
+        [InlineKeyboardButton("🆘 Ajuda", callback_data="help")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    message = """
 🤖 <b>FREQTRADE COMMANDER</b>
 
 Bem-vindo ao sistema de controle avançado!
 
 Escolha uma opção abaixo para começar:
-        """
-        
-        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+    """
     
-    else:
-        await query.edit_message_text("🚧 Funcionalidade em desenvolvimento...")
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
 def main():
     """Função principal"""
@@ -273,3 +425,364 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+async def show_strategy_control(query, strategy_id: str):
+    """Mostrar controles de uma estratégia específica"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    status = await commander.get_container_status(strategy_info['container'])
+    summary = commander.controller.get_strategy_summary(strategy_id)
+    
+    status_emoji = "🟢" if status['running'] else "🔴"
+    mode_emoji = "🟡" if summary.get('dry_run', True) else "🔴"
+    mode_text = "DRY-RUN" if summary.get('dry_run', True) else "LIVE"
+    
+    message = f"""
+🎮 <b>CONTROLE - {strategy_info['name']}</b>
+
+📊 <b>Status Atual:</b>
+• Status: {status_emoji} {status['status']}
+• Modo: {mode_emoji} {mode_text}
+• Stake: {summary.get('stake_amount', 0)} {summary.get('stake_currency', 'USDT')}
+• Max Trades: {summary.get('max_open_trades', 0)}
+• Timeframe: {summary.get('timeframe', '15m')}
+
+🎯 <b>Ações Disponíveis:</b>
+    """
+    
+    keyboard = []
+    
+    if status['running']:
+        keyboard.append([
+            InlineKeyboardButton("⏹️ Parar", callback_data=f"action_stop_{strategy_id}"),
+            InlineKeyboardButton("🔄 Reiniciar", callback_data=f"action_restart_{strategy_id}")
+        ])
+    else:
+        keyboard.append([
+            InlineKeyboardButton("▶️ Iniciar", callback_data=f"action_start_{strategy_id}")
+        ])
+    
+    keyboard.extend([
+        [
+            InlineKeyboardButton("📋 Logs", callback_data=f"logs_{strategy_id}"),
+            InlineKeyboardButton("⚙️ Config", callback_data=f"config_{strategy_id}")
+        ],
+        [
+            InlineKeyboardButton("📈 Stats", callback_data=f"stats_{strategy_id}"),
+            InlineKeyboardButton("🔄 DRY/LIVE", callback_data=f"toggle_{strategy_id}")
+        ],
+        [InlineKeyboardButton("🔙 Voltar", callback_data="control_menu")]
+    ])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def execute_strategy_action(query, strategy_id: str, action: str):
+    """Executar ação em uma estratégia"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    container_name = strategy_info['container']
+    
+    # Mostrar mensagem de processamento
+    await query.edit_message_text(f"⏳ Executando {action} em {strategy_info['name']}...")
+    
+    try:
+        if action == "start":
+            result = subprocess.run([
+                'docker', 'compose', 'start', strategy_id
+            ], capture_output=True, text=True, cwd="/app/project")
+            
+        elif action == "stop":
+            result = subprocess.run([
+                'docker', 'compose', 'stop', strategy_id
+            ], capture_output=True, text=True, cwd="/app/project")
+            
+        elif action == "restart":
+            result = subprocess.run([
+                'docker', 'compose', 'restart', strategy_id
+            ], capture_output=True, text=True, cwd="/app/project")
+        
+        if result.returncode == 0:
+            message = f"✅ <b>{action.upper()} executado com sucesso!</b>\n\n"
+            message += f"Estratégia: {strategy_info['name']}\n"
+            message += f"Container: {container_name}\n"
+            message += f"Ação: {action}\n"
+            
+            # Aguardar um pouco para o container atualizar
+            await asyncio.sleep(2)
+            
+            # Verificar novo status
+            status = await commander.get_container_status(container_name)
+            status_emoji = "🟢" if status['running'] else "🔴"
+            message += f"Novo status: {status_emoji} {status['status']}"
+            
+        else:
+            message = f"❌ <b>Erro ao executar {action}!</b>\n\n"
+            message += f"Erro: {result.stderr}\n"
+            
+    except Exception as e:
+        message = f"❌ <b>Erro interno!</b>\n\nDetalhes: {str(e)}"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔄 Atualizar", callback_data=f"strategy_{strategy_id}")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data="control_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_strategy_logs(query, strategy_id: str):
+    """Mostrar logs de uma estratégia"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    logs = commander.controller.get_strategy_logs(strategy_id, lines=20)
+    
+    message = f"📋 <b>LOGS - {strategy_info['name']}</b>\n\n"
+    message += "<code>"
+    
+    # Mostrar apenas as últimas 10 linhas para não exceder limite do Telegram
+    recent_logs = []
+    for line in logs[-10:]:
+        if line.strip() and not line.startswith('time='):  # Filtrar linhas vazias e warnings
+            # Limitar tamanho da linha e remover caracteres especiais
+            clean_line = line.replace('ft-', '').strip()[:80]
+            if clean_line:
+                recent_logs.append(clean_line)
+    
+    if recent_logs:
+        message += "\n".join(recent_logs[-8:])  # Últimas 8 linhas
+    else:
+        message += "Nenhum log recente encontrado."
+    
+    message += "</code>"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔄 Atualizar", callback_data=f"logs_{strategy_id}")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_strategy_config(query, strategy_id: str):
+    """Mostrar configuração de uma estratégia"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    summary = commander.controller.get_strategy_summary(strategy_id)
+    
+    if 'error' in summary:
+        await query.edit_message_text(f"❌ Erro: {summary['error']}")
+        return
+    
+    mode_emoji = "🟡" if summary['dry_run'] else "🔴"
+    mode_text = "DRY-RUN" if summary['dry_run'] else "LIVE"
+    
+    message = f"""
+⚙️ <b>CONFIGURAÇÃO - {strategy_info['name']}</b>
+
+📊 <b>Configurações Atuais:</b>
+• Modo: {mode_emoji} {mode_text}
+• Stake Amount: {summary['stake_amount']} {summary['stake_currency']}
+• Max Trades: {summary['max_open_trades']}
+• Timeframe: {summary['timeframe']}
+• Container: {summary['container_status']}
+
+⚠️ <b>Atenção:</b> Mudanças requerem reinicialização da estratégia.
+    """
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 DRY/LIVE", callback_data=f"toggle_{strategy_id}"),
+            InlineKeyboardButton("💰 Stake", callback_data=f"stake_{strategy_id}")
+        ],
+        [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_strategy_stats(query, strategy_id: str):
+    """Mostrar estatísticas de uma estratégia"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    
+    try:
+        # Obter estatísticas básicas
+        stats = commander.stats.get_strategy_stats(strategy_id)
+        
+        message = f"""
+📈 <b>ESTATÍSTICAS - {strategy_info['name']}</b>
+
+📊 <b>Performance:</b>
+• Total Trades: {stats.get('total_trades', 0)}
+• Trades Ganhos: {stats.get('winning_trades', 0)}
+• Trades Perdidos: {stats.get('losing_trades', 0)}
+• Win Rate: {stats.get('win_rate', 0):.1f}%
+
+💰 <b>Financeiro:</b>
+• P&L Total: {stats.get('total_profit', 0):.2f} USDT
+• P&L Hoje: {stats.get('profit_today', 0):.2f} USDT
+• Melhor Trade: {stats.get('best_trade', 0):.2f} USDT
+• Pior Trade: {stats.get('worst_trade', 0):.2f} USDT
+
+📅 <b>Período:</b>
+• Primeiro Trade: {stats.get('first_trade_date', 'N/A')}
+• Último Trade: {stats.get('last_trade_date', 'N/A')}
+• Dias Ativos: {stats.get('active_days', 0)}
+        """
+        
+    except Exception as e:
+        message = f"""
+📈 <b>ESTATÍSTICAS - {strategy_info['name']}</b>
+
+❌ <b>Erro ao carregar estatísticas:</b>
+{str(e)}
+
+💡 <b>Possíveis causas:</b>
+• Estratégia nunca foi executada
+• Banco de dados não acessível
+• Configuração incorreta
+        """
+    
+    keyboard = [
+        [InlineKeyboardButton("🔄 Atualizar", callback_data=f"stats_{strategy_id}")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def toggle_strategy_dry_run(query, strategy_id: str):
+    """Alternar modo dry-run de uma estratégia"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    summary = commander.controller.get_strategy_summary(strategy_id)
+    
+    current_mode = "DRY-RUN" if summary.get('dry_run', True) else "LIVE"
+    new_mode = "LIVE" if current_mode == "DRY-RUN" else "DRY-RUN"
+    
+    # Se mudando para LIVE, mostrar confirmação
+    if new_mode == "LIVE":
+        message = f"""
+⚠️ <b>CONFIRMAÇÃO NECESSÁRIA</b>
+
+Você está prestes a alterar a estratégia <b>{strategy_info['name']}</b> para modo <b>LIVE</b>.
+
+🚨 <b>ATENÇÃO:</b>
+• Modo LIVE usa dinheiro real
+• Trades serão executados na exchange
+• Certifique-se de que a estratégia está testada
+• Verifique o stake amount: {summary.get('stake_amount', 0)} USDT
+
+Tem certeza que deseja continuar?
+        """
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Confirmar LIVE", callback_data=f"confirm_live_{strategy_id}"),
+                InlineKeyboardButton("❌ Cancelar", callback_data=f"strategy_{strategy_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+    else:
+        # Mudança para DRY-RUN é segura, executar diretamente
+        await execute_mode_change(query, strategy_id, True)
+
+async def execute_mode_change(query, strategy_id: str, dry_run: bool):
+    """Executar mudança de modo"""
+    strategy_info = STRATEGIES[strategy_id]
+    mode_text = "DRY-RUN" if dry_run else "LIVE"
+    
+    await query.edit_message_text(f"⏳ Alterando modo de {strategy_info['name']} para {mode_text}...")
+    
+    result = commander.controller.toggle_dry_run(strategy_id)
+    
+    if result['success']:
+        message = f"✅ <b>Modo alterado com sucesso!</b>\n\n"
+        message += f"Estratégia: {strategy_info['name']}\n"
+        message += f"Novo modo: {result['new_mode']}\n\n"
+        message += "⚠️ <b>Reinicialização necessária</b>\n"
+        message += "A estratégia precisa ser reiniciada para aplicar as mudanças."
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Reiniciar Agora", callback_data=f"action_restart_{strategy_id}")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
+        ]
+    else:
+        message = f"❌ <b>Erro ao alterar modo!</b>\n\n{result['message']}"
+        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_general_stats(query):
+    """Mostrar estatísticas gerais de todas as estratégias"""
+    message = "📈 <b>ESTATÍSTICAS GERAIS</b>\n\n"
+    
+    total_trades = 0
+    total_profit = 0
+    total_winning = 0
+    total_losing = 0
+    
+    for strategy_id, strategy_info in STRATEGIES.items():
+        try:
+            stats = commander.stats.get_strategy_stats(strategy_id)
+            
+            trades = stats.get('total_trades', 0)
+            profit = stats.get('total_profit', 0)
+            winning = stats.get('winning_trades', 0)
+            losing = stats.get('losing_trades', 0)
+            
+            total_trades += trades
+            total_profit += profit
+            total_winning += winning
+            total_losing += losing
+            
+            status = await commander.get_container_status(strategy_info['container'])
+            status_emoji = "🟢" if status['running'] else "🔴"
+            
+            message += f"{status_emoji} <b>{strategy_info['name']}</b>\n"
+            message += f"   Trades: {trades} | P&L: {profit:.2f} USDT\n"
+            message += f"   Win Rate: {(winning/(trades or 1)*100):.1f}%\n\n"
+            
+        except Exception as e:
+            message += f"🔴 <b>{strategy_info['name']}</b>\n"
+            message += f"   Erro: Sem dados disponíveis\n\n"
+    
+    # Resumo geral
+    overall_win_rate = (total_winning / (total_trades or 1)) * 100
+    
+    message += f"📊 <b>RESUMO GERAL:</b>\n"
+    message += f"• Total de Trades: {total_trades}\n"
+    message += f"• P&L Total: {total_profit:.2f} USDT\n"
+    message += f"• Win Rate Geral: {overall_win_rate:.1f}%\n"
+    message += f"• Trades Ganhos: {total_winning}\n"
+    message += f"• Trades Perdidos: {total_losing}\n"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔄 Atualizar", callback_data="stats_general")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data="stats_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
