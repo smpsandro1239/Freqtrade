@@ -493,20 +493,21 @@ async def execute_strategy_action(query, strategy_id: str, action: str):
     await query.edit_message_text(f"⏳ Executando {action} em {strategy_info['name']}...")
     
     try:
+        # Usar docker diretamente em vez de docker compose para melhor controle
         if action == "start":
             result = subprocess.run([
-                'docker', 'compose', 'start', strategy_id
-            ], capture_output=True, text=True, cwd="/app/project")
+                'docker', 'start', container_name
+            ], capture_output=True, text=True)
             
         elif action == "stop":
             result = subprocess.run([
-                'docker', 'compose', 'stop', strategy_id
-            ], capture_output=True, text=True, cwd="/app/project")
+                'docker', 'stop', container_name
+            ], capture_output=True, text=True)
             
         elif action == "restart":
             result = subprocess.run([
-                'docker', 'compose', 'restart', strategy_id
-            ], capture_output=True, text=True, cwd="/app/project")
+                'docker', 'restart', container_name
+            ], capture_output=True, text=True)
         
         if result.returncode == 0:
             message = f"✅ <b>{action.upper()} executado com sucesso!</b>\n\n"
@@ -515,7 +516,7 @@ async def execute_strategy_action(query, strategy_id: str, action: str):
             message += f"Ação: {action}\n"
             
             # Aguardar um pouco para o container atualizar
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             
             # Verificar novo status
             status = await commander.get_container_status(container_name)
@@ -525,6 +526,7 @@ async def execute_strategy_action(query, strategy_id: str, action: str):
         else:
             message = f"❌ <b>Erro ao executar {action}!</b>\n\n"
             message += f"Erro: {result.stderr}\n"
+            message += f"Output: {result.stdout}\n"
             
     except Exception as e:
         message = f"❌ <b>Erro interno!</b>\n\nDetalhes: {str(e)}"
@@ -544,24 +546,44 @@ async def show_strategy_logs(query, strategy_id: str):
         return
     
     strategy_info = STRATEGIES[strategy_id]
-    logs = commander.controller.get_strategy_logs(strategy_id, lines=20)
+    container_name = strategy_info['container']
+    
+    try:
+        # Obter logs diretamente do container
+        result = subprocess.run([
+            'docker', 'logs', '--tail', '15', container_name
+        ], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            logs = result.stdout.split('\n')
+        else:
+            logs = [f"Erro ao obter logs: {result.stderr}"]
+    except Exception as e:
+        logs = [f"Erro interno: {str(e)}"]
     
     message = f"📋 <b>LOGS - {strategy_info['name']}</b>\n\n"
     message += "<code>"
     
-    # Mostrar apenas as últimas 10 linhas para não exceder limite do Telegram
+    # Filtrar e formatar logs
     recent_logs = []
-    for line in logs[-10:]:
-        if line.strip() and not line.startswith('time='):  # Filtrar linhas vazias e warnings
-            # Limitar tamanho da linha e remover caracteres especiais
-            clean_line = line.replace('ft-', '').strip()[:80]
-            if clean_line:
+    for line in logs:
+        if line.strip():
+            # Remover timestamp e container name para economizar espaço
+            clean_line = line
+            if ' - ' in line:
+                parts = line.split(' - ', 2)
+                if len(parts) >= 3:
+                    clean_line = parts[2]  # Pegar apenas a mensagem
+            
+            # Limitar tamanho e filtrar logs importantes
+            if any(keyword in clean_line.lower() for keyword in ['error', 'info', 'warning', 'started', 'stopped', 'exchange', 'strategy']):
+                clean_line = clean_line[:100]  # Limitar tamanho
                 recent_logs.append(clean_line)
     
     if recent_logs:
-        message += "\n".join(recent_logs[-8:])  # Últimas 8 linhas
+        message += "\n".join(recent_logs[-8:])  # Últimas 8 linhas relevantes
     else:
-        message += "Nenhum log recente encontrado."
+        message += "Nenhum log relevante encontrado."
     
     message += "</code>"
     
@@ -715,21 +737,26 @@ async def execute_mode_change(query, strategy_id: str, dry_run: bool):
     
     await query.edit_message_text(f"⏳ Alterando modo de {strategy_info['name']} para {mode_text}...")
     
-    result = commander.controller.toggle_dry_run(strategy_id)
-    
-    if result['success']:
-        message = f"✅ <b>Modo alterado com sucesso!</b>\n\n"
-        message += f"Estratégia: {strategy_info['name']}\n"
-        message += f"Novo modo: {result['new_mode']}\n\n"
-        message += "⚠️ <b>Reinicialização necessária</b>\n"
-        message += "A estratégia precisa ser reiniciada para aplicar as mudanças."
+    try:
+        result = commander.controller.toggle_dry_run(strategy_id)
         
-        keyboard = [
-            [InlineKeyboardButton("🔄 Reiniciar Agora", callback_data=f"action_restart_{strategy_id}")],
-            [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
-        ]
-    else:
-        message = f"❌ <b>Erro ao alterar modo!</b>\n\n{result['message']}"
+        if result.get('success', False):
+            message = f"✅ <b>Modo alterado com sucesso!</b>\n\n"
+            message += f"Estratégia: {strategy_info['name']}\n"
+            message += f"Novo modo: {result.get('new_mode', mode_text)}\n\n"
+            message += "⚠️ <b>Reinicialização necessária</b>\n"
+            message += "A estratégia precisa ser reiniciada para aplicar as mudanças."
+            
+            keyboard = [
+                [InlineKeyboardButton("🔄 Reiniciar Agora", callback_data=f"action_restart_{strategy_id}")],
+                [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
+            ]
+        else:
+            message = f"❌ <b>Erro ao alterar modo!</b>\n\n{result.get('message', 'Erro desconhecido')}"
+            keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
+            
+    except Exception as e:
+        message = f"❌ <b>Erro interno!</b>\n\nDetalhes: {str(e)}"
         keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
     
     reply_markup = InlineKeyboardMarkup(keyboard)

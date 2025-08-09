@@ -5,7 +5,6 @@ x-common: &common
   volumes:
     - ./user_data:/freqtrade/user_data
     - ./.env:/freqtrade/.env:ro
-    - ft_data:/freqtrade/user_data
   env_file: .env
   restart: unless-stopped
   depends_on:
@@ -101,4 +100,3 @@ services:
 
 volumes:
   redis_data:
-  ft_data:

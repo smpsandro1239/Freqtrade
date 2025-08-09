@@ -102,15 +102,29 @@ class FreqtradeStats:
     def _get_mock_stats(self, strategy_id: str):
         """Get mock statistics for demonstration"""
         import random
+        import hashlib
+        
+        # Use strategy_id as seed for consistent data
+        seed = int(hashlib.md5(strategy_id.encode()).hexdigest()[:8], 16)
+        random.seed(seed)
         
         # Generate realistic mock data based on strategy
-        base_trades = random.randint(5, 50)
-        win_rate = random.uniform(45, 75)
+        if 'waveHyperNW' in strategy_id:
+            base_trades = random.randint(15, 45)
+            win_rate = random.uniform(55, 75)
+            total_profit = random.uniform(50, 300)
+        elif 'stratA' in strategy_id:
+            base_trades = random.randint(8, 25)
+            win_rate = random.uniform(45, 65)
+            total_profit = random.uniform(-20, 150)
+        else:  # stratB
+            base_trades = random.randint(10, 30)
+            win_rate = random.uniform(50, 70)
+            total_profit = random.uniform(20, 200)
+        
         winning = int(base_trades * win_rate / 100)
         losing = base_trades - winning
-        
-        total_profit = random.uniform(-50, 200)
-        profit_today = random.uniform(-10, 30)
+        profit_today = random.uniform(-15, 25)
         
         return {
             'total_trades': base_trades,
@@ -120,11 +134,11 @@ class FreqtradeStats:
             'total_profit': total_profit,
             'profit_today': profit_today,
             'avg_profit': total_profit / base_trades if base_trades > 0 else 0,
-            'best_trade': random.uniform(5, 25),
-            'worst_trade': random.uniform(-15, -2),
-            'first_trade_date': '2024-01-15',
-            'last_trade_date': '2024-02-08',
-            'active_days': random.randint(10, 30)
+            'best_trade': random.uniform(8, 35),
+            'worst_trade': random.uniform(-25, -3),
+            'first_trade_date': '2025-01-15',
+            'last_trade_date': '2025-02-08',
+            'active_days': random.randint(15, 25)
         }
     
     def _get_empty_stats(self):
