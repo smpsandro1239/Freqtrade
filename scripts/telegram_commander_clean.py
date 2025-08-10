@@ -62,7 +62,6 @@ class TelegramCommander:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                # Tentar diferentes formas de conectar ao Docker
                 if os.name == 'nt':  # Windows
                     try:
                         client = docker.DockerClient(base_url='npipe:////./pipe/docker_engine')
@@ -71,7 +70,6 @@ class TelegramCommander:
                 else:
                     client = docker.from_env()
                 
-                # Testar conexão
                 client.ping()
                 logger.info(f"✅ Docker conectado com sucesso (tentativa {attempt + 1})")
                 return client
@@ -101,7 +99,6 @@ class TelegramCommander:
                     'restart_count': container.attrs.get('RestartCount', 0)
                 }
             else:
-                # Fallback para comando CLI
                 result = subprocess.run(['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', 'table {{.Names}}\t{{.Status}}'], 
                                       capture_output=True, text=True)
                 if result.returncode == 0 and container_name in result.stdout:
@@ -202,79 +199,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     
     await update.message.reply_text(message, parse_mode='HTML')
-
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Callback para botões inline"""
-    query = update.callback_query
-    await query.answer()
-    
-    if not commander.is_admin(query.from_user.id):
-        await query.edit_message_text("❌ Acesso negado.")
-        return
-    
-    data = query.data
-    logger.info(f"🔘 Callback recebido: {data}")
-    
-    # Validar callback data
-    if not data or data.strip() == "":
-        await query.edit_message_text("❌ Comando inválido (callback vazio).")
-        return
-    
-    try:
-        if data == "status_all":
-            await show_status_all(query)
-        elif data == "control_menu":
-            await show_control_menu(query)
-        elif data == "stats_menu":
-            await show_stats_menu(query)
-        elif data == "config_menu":
-            await show_config_menu(query)
-        elif data == "help":
-            await show_help_menu(query)
-        elif data == "main_menu":
-            await show_main_menu(query)
-        elif data.startswith("strategy_"):
-            strategy_id = data.replace("strategy_", "")
-            await show_strategy_control(query, strategy_id)
-        elif data.startswith("action_"):
-            parts = data.split("_", 2)
-            action = parts[1]
-            strategy_id = parts[2]
-            await execute_strategy_action(query, strategy_id, action)
-        elif data.startswith("logs_"):
-            strategy_id = data.replace("logs_", "")
-            await show_strategy_logs(query, strategy_id)
-        elif data.startswith("config_"):
-            strategy_id = data.replace("config_", "")
-            await show_strategy_config(query, strategy_id)
-        elif data.startswith("stats_"):
-            strategy_id = data.replace("stats_", "")
-            await show_strategy_stats(query, strategy_id)
-        elif data.startswith("toggle_"):
-            strategy_id = data.replace("toggle_", "")
-            await toggle_strategy_dry_run(query, strategy_id)
-        elif data.startswith("confirm_live_"):
-            strategy_id = data.replace("confirm_live_", "")
-            await execute_mode_change(query, strategy_id, False)
-        elif data.startswith("stake_"):
-            strategy_id = data.replace("stake_", "")
-            await show_stake_config(query, strategy_id)
-        elif data.startswith("set_stake_"):
-            parts = data.split("_", 3)
-            strategy_id = parts[2]
-            stake_amount = int(parts[3])
-            await set_stake_amount(query, strategy_id, stake_amount)
-        elif data == "stats_general":
-            await show_general_stats(query)
-        else:
-            await query.edit_message_text("❌ Comando não reconhecido.")
-            
-    except NameError as e:
-        logger.error(f"🚨 NameError no callback {data}: {e}")
-        await query.edit_message_text(f"❌ Erro interno: Função não encontrada.\n\nCallback: {data}\nErro: {str(e)}")
-    except Exception as e:
-        logger.error(f"🚨 Erro no callback {data}: {e}")
-        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
 
 async def show_status_all(query):
     """Mostrar status detalhado de todas as estratégias"""
@@ -427,57 +351,6 @@ Escolha uma opção abaixo para começar:
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler para capturar erros"""
-    logger.error(f"🚨 Erro capturado: {context.error}")
-    logger.error(f"📍 Update: {update}")
-    
-    # Tentar enviar mensagem de erro para o usuário
-    try:
-        if update and update.effective_chat:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="❌ Ocorreu um erro interno. Por favor, tente novamente."
-            )
-    except Exception as e:
-        logger.error(f"Erro ao enviar mensagem de erro: {e}")
-
-def main():
-    """Função principal"""
-    if not TOKEN:
-        logger.error("❌ TELEGRAM_TOKEN não configurado!")
-        return
-    
-    if not CHAT_ID:
-        logger.error("❌ TELEGRAM_CHAT_ID não configurado!")
-        return
-    
-    logger.info(f"🔑 Token configurado: {TOKEN[:10]}...")
-    logger.info(f"👤 Chat ID configurado: {CHAT_ID}")
-    logger.info(f"👥 Usuários admin: {ADMIN_USERS}")
-    
-    # Criar aplicação
-    application = Application.builder().token(TOKEN).build()
-    
-    # Adicionar handlers
-    application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("status", status_command))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("control", control_command))
-    application.add_handler(CommandHandler("stats", stats_command))
-    application.add_handler(CommandHandler("emergency", emergency_stop_command))
-    application.add_handler(CommandHandler("quick", quick_status_command))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    
-    # Adicionar handler de erro
-    application.add_error_handler(error_handler)
-    
-    # Iniciar bot
-    logger.info("🤖 Telegram Commander iniciado!")
-    application.run_polling()
-
-# Remover esta chamada - será movida para o final
-
 async def show_strategy_control(query, strategy_id: str):
     """Mostrar controles de uma estratégia específica"""
     if strategy_id not in STRATEGIES:
@@ -541,25 +414,15 @@ async def execute_strategy_action(query, strategy_id: str, action: str):
     strategy_info = STRATEGIES[strategy_id]
     container_name = strategy_info['container']
     
-    # Mostrar mensagem de processamento
     await query.edit_message_text(f"⏳ Executando {action} em {strategy_info['name']}...")
     
     try:
-        # Usar docker diretamente em vez de docker compose para melhor controle
         if action == "start":
-            result = subprocess.run([
-                'docker', 'start', container_name
-            ], capture_output=True, text=True)
-            
+            result = subprocess.run(['docker', 'start', container_name], capture_output=True, text=True)
         elif action == "stop":
-            result = subprocess.run([
-                'docker', 'stop', container_name
-            ], capture_output=True, text=True)
-            
+            result = subprocess.run(['docker', 'stop', container_name], capture_output=True, text=True)
         elif action == "restart":
-            result = subprocess.run([
-                'docker', 'restart', container_name
-            ], capture_output=True, text=True)
+            result = subprocess.run(['docker', 'restart', container_name], capture_output=True, text=True)
         
         if result.returncode == 0:
             message = f"✅ <b>{action.upper()} executado com sucesso!</b>\n\n"
@@ -567,14 +430,11 @@ async def execute_strategy_action(query, strategy_id: str, action: str):
             message += f"Container: {container_name}\n"
             message += f"Ação: {action}\n"
             
-            # Aguardar um pouco para o container atualizar
             await asyncio.sleep(3)
             
-            # Verificar novo status
             status = await commander.get_container_status(container_name)
             status_emoji = "🟢" if status['running'] else "🔴"
             message += f"Novo status: {status_emoji} {status['status']}"
-            
         else:
             message = f"❌ <b>Erro ao executar {action}!</b>\n\n"
             message += f"Erro: {result.stderr}\n"
@@ -601,10 +461,7 @@ async def show_strategy_logs(query, strategy_id: str):
     container_name = strategy_info['container']
     
     try:
-        # Obter logs diretamente do container
-        result = subprocess.run([
-            'docker', 'logs', '--tail', '15', container_name
-        ], capture_output=True, text=True)
+        result = subprocess.run(['docker', 'logs', '--tail', '15', container_name], capture_output=True, text=True)
         
         if result.returncode == 0:
             logs = result.stdout.split('\n')
@@ -616,24 +473,21 @@ async def show_strategy_logs(query, strategy_id: str):
     message = f"📋 <b>LOGS - {strategy_info['name']}</b>\n\n"
     message += "<code>"
     
-    # Filtrar e formatar logs
     recent_logs = []
     for line in logs:
         if line.strip():
-            # Remover timestamp e container name para economizar espaço
             clean_line = line
             if ' - ' in line:
                 parts = line.split(' - ', 2)
                 if len(parts) >= 3:
-                    clean_line = parts[2]  # Pegar apenas a mensagem
+                    clean_line = parts[2]
             
-            # Limitar tamanho e filtrar logs importantes
             if any(keyword in clean_line.lower() for keyword in ['error', 'info', 'warning', 'started', 'stopped', 'exchange', 'strategy']):
-                clean_line = clean_line[:100]  # Limitar tamanho
+                clean_line = clean_line[:100]
                 recent_logs.append(clean_line)
     
     if recent_logs:
-        message += "\n".join(recent_logs[-8:])  # Últimas 8 linhas relevantes
+        message += "\n".join(recent_logs[-8:])
     else:
         message += "Nenhum log relevante encontrado."
     
@@ -696,7 +550,6 @@ async def show_strategy_stats(query, strategy_id: str):
     strategy_info = STRATEGIES[strategy_id]
     
     try:
-        # Obter estatísticas básicas
         stats = commander.stats.get_strategy_stats(strategy_id)
         
         message = f"""
@@ -741,79 +594,6 @@ async def show_strategy_stats(query, strategy_id: str):
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
-async def toggle_strategy_dry_run(query, strategy_id: str):
-    """Alternar modo dry-run de uma estratégia"""
-    if strategy_id not in STRATEGIES:
-        await query.edit_message_text("❌ Estratégia não encontrada.")
-        return
-    
-    strategy_info = STRATEGIES[strategy_id]
-    summary = commander.controller.get_strategy_summary(strategy_id)
-    
-    current_mode = "DRY-RUN" if summary.get('dry_run', True) else "LIVE"
-    new_mode = "LIVE" if current_mode == "DRY-RUN" else "DRY-RUN"
-    
-    # Se mudando para LIVE, mostrar confirmação
-    if new_mode == "LIVE":
-        message = f"""
-⚠️ <b>CONFIRMAÇÃO NECESSÁRIA</b>
-
-Você está prestes a alterar a estratégia <b>{strategy_info['name']}</b> para modo <b>LIVE</b>.
-
-🚨 <b>ATENÇÃO:</b>
-• Modo LIVE usa dinheiro real
-• Trades serão executados na exchange
-• Certifique-se de que a estratégia está testada
-• Verifique o stake amount: {summary.get('stake_amount', 0)} USDT
-
-Tem certeza que deseja continuar?
-        """
-        
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Confirmar LIVE", callback_data=f"confirm_live_{strategy_id}"),
-                InlineKeyboardButton("❌ Cancelar", callback_data=f"strategy_{strategy_id}")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
-    else:
-        # Mudança para DRY-RUN é segura, executar diretamente
-        await execute_mode_change(query, strategy_id, True)
-
-async def execute_mode_change(query, strategy_id: str, dry_run: bool):
-    """Executar mudança de modo"""
-    strategy_info = STRATEGIES[strategy_id]
-    mode_text = "DRY-RUN" if dry_run else "LIVE"
-    
-    await query.edit_message_text(f"⏳ Alterando modo de {strategy_info['name']} para {mode_text}...")
-    
-    try:
-        result = commander.controller.toggle_dry_run(strategy_id)
-        
-        if result.get('success', False):
-            message = f"✅ <b>Modo alterado com sucesso!</b>\n\n"
-            message += f"Estratégia: {strategy_info['name']}\n"
-            message += f"Novo modo: {result.get('new_mode', mode_text)}\n\n"
-            message += "⚠️ <b>Reinicialização necessária</b>\n"
-            message += "A estratégia precisa ser reiniciada para aplicar as mudanças."
-            
-            keyboard = [
-                [InlineKeyboardButton("🔄 Reiniciar Agora", callback_data=f"action_restart_{strategy_id}")],
-                [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
-            ]
-        else:
-            message = f"❌ <b>Erro ao alterar modo!</b>\n\n{result.get('message', 'Erro desconhecido')}"
-            keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
-            
-    except Exception as e:
-        message = f"❌ <b>Erro interno!</b>\n\nDetalhes: {str(e)}"
-        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
-
 async def show_general_stats(query):
     """Mostrar estatísticas gerais de todas as estratégias"""
     message = "📈 <b>ESTATÍSTICAS GERAIS</b>\n\n"
@@ -848,7 +628,6 @@ async def show_general_stats(query):
             message += f"🔴 <b>{strategy_info['name']}</b>\n"
             message += f"   Erro: Sem dados disponíveis\n\n"
     
-    # Resumo geral
     overall_win_rate = (total_winning / (total_trades or 1)) * 100
     
     message += f"📊 <b>RESUMO GERAL:</b>\n"
@@ -864,6 +643,77 @@ async def show_general_stats(query):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def toggle_strategy_dry_run(query, strategy_id: str):
+    """Alternar modo dry-run de uma estratégia"""
+    if strategy_id not in STRATEGIES:
+        await query.edit_message_text("❌ Estratégia não encontrada.")
+        return
+    
+    strategy_info = STRATEGIES[strategy_id]
+    summary = commander.controller.get_strategy_summary(strategy_id)
+    
+    current_mode = "DRY-RUN" if summary.get('dry_run', True) else "LIVE"
+    new_mode = "LIVE" if current_mode == "DRY-RUN" else "DRY-RUN"
+    
+    if new_mode == "LIVE":
+        message = f"""
+⚠️ <b>CONFIRMAÇÃO NECESSÁRIA</b>
+
+Você está prestes a alterar a estratégia <b>{strategy_info['name']}</b> para modo <b>LIVE</b>.
+
+🚨 <b>ATENÇÃO:</b>
+• Modo LIVE usa dinheiro real
+• Trades serão executados na exchange
+• Certifique-se de que a estratégia está testada
+• Verifique o stake amount: {summary.get('stake_amount', 0)} USDT
+
+Tem certeza que deseja continuar?
+        """
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Confirmar LIVE", callback_data=f"confirm_live_{strategy_id}"),
+                InlineKeyboardButton("❌ Cancelar", callback_data=f"strategy_{strategy_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+    else:
+        await execute_mode_change(query, strategy_id, True)
+
+async def execute_mode_change(query, strategy_id: str, dry_run: bool):
+    """Executar mudança de modo"""
+    strategy_info = STRATEGIES[strategy_id]
+    mode_text = "DRY-RUN" if dry_run else "LIVE"
+    
+    await query.edit_message_text(f"⏳ Alterando modo de {strategy_info['name']} para {mode_text}...")
+    
+    try:
+        result = commander.controller.toggle_dry_run(strategy_id)
+        
+        if result.get('success', False):
+            message = f"✅ <b>Modo alterado com sucesso!</b>\n\n"
+            message += f"Estratégia: {strategy_info['name']}\n"
+            message += f"Novo modo: {result.get('new_mode', mode_text)}\n\n"
+            message += "⚠️ <b>Reinicialização necessária</b>\n"
+            message += "A estratégia precisa ser reiniciada para aplicar as mudanças."
+            
+            keyboard = [
+                [InlineKeyboardButton("🔄 Reiniciar Agora", callback_data=f"action_restart_{strategy_id}")],
+                [InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]
+            ]
+        else:
+            message = f"❌ <b>Erro ao alterar modo!</b>\n\n{result.get('message', 'Erro desconhecido')}"
+            keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
+            
+    except Exception as e:
+        message = f"❌ <b>Erro interno!</b>\n\nDetalhes: {str(e)}"
+        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
 async def show_stake_config(query, strategy_id: str):
@@ -894,7 +744,6 @@ async def show_stake_config(query, strategy_id: str):
 Selecione um novo valor de stake:
     """
     
-    # Opções de stake baseadas no valor atual
     stake_options = [10, 20, 50, 100, 200, 500]
     
     keyboard = []
@@ -903,12 +752,10 @@ Selecione um novo valor de stake:
         emoji = "✅" if stake == current_stake else "💰"
         row.append(InlineKeyboardButton(f"{emoji} {stake} {currency}", callback_data=f"set_stake_{strategy_id}_{stake}"))
         
-        # Criar linha com 3 botões
         if (i + 1) % 3 == 0:
             keyboard.append(row)
             row = []
     
-    # Adicionar botões restantes se houver
     if row:
         keyboard.append(row)
     
@@ -952,88 +799,119 @@ async def set_stake_amount(query, strategy_id: str, stake_amount: int):
         keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"config_{strategy_id}")]]
     
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')# 
-Comandos adicionais úteis
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
-async def control_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando /control - Acesso direto ao menu de controle"""
-    if not commander.is_admin(update.effective_user.id):
-        await update.message.reply_text("❌ Acesso negado.")
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Callback para botões inline"""
+    query = update.callback_query
+    await query.answer()
+    
+    if not commander.is_admin(query.from_user.id):
+        await query.edit_message_text("❌ Acesso negado.")
         return
     
-    # Simular callback para mostrar menu de controle
-    class FakeQuery:
-        def __init__(self, chat_id):
-            self.message = type('obj', (object,), {'chat_id': chat_id})()
-        
-        async def edit_message_text(self, text, reply_markup=None, parse_mode=None):
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
+    data = query.data
+    logger.info(f"🔘 Callback recebido: {data}")
     
-    fake_query = FakeQuery(update.effective_chat.id)
-    await show_control_menu(fake_query)
-
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando /stats - Acesso direto às estatísticas"""
-    if not commander.is_admin(update.effective_user.id):
-        await update.message.reply_text("❌ Acesso negado.")
+    if not data or data.strip() == "":
+        await query.edit_message_text("❌ Comando inválido (callback vazio).")
         return
     
-    # Simular callback para mostrar estatísticas gerais
-    class FakeQuery:
-        def __init__(self, chat_id):
-            self.message = type('obj', (object,), {'chat_id': chat_id})()
-        
-        async def edit_message_text(self, text, reply_markup=None, parse_mode=None):
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
-    
-    fake_query = FakeQuery(update.effective_chat.id)
-    await show_general_stats(fake_query)
-
-async def emergency_stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando /emergency - Parar todas as estratégias imediatamente"""
-    if not commander.is_admin(update.effective_user.id):
-        await update.message.reply_text("❌ Acesso negado.")
-        return
-    
-    await update.message.reply_text("🚨 <b>PARADA DE EMERGÊNCIA INICIADA</b>\n\nParando todas as estratégias...", parse_mode='HTML')
-    
-    results = []
-    for strategy_id, strategy_info in STRATEGIES.items():
-        try:
-            result = subprocess.run([
-                'docker', 'stop', strategy_info['container']
-            ], capture_output=True, text=True, timeout=30)
+    try:
+        if data == "status_all":
+            await show_status_all(query)
+        elif data == "control_menu":
+            await show_control_menu(query)
+        elif data == "stats_menu":
+            await show_stats_menu(query)
+        elif data == "config_menu":
+            await show_config_menu(query)
+        elif data == "help":
+            await show_help_menu(query)
+        elif data == "main_menu":
+            await show_main_menu(query)
+        elif data.startswith("strategy_"):
+            strategy_id = data.replace("strategy_", "")
+            await show_strategy_control(query, strategy_id)
+        elif data.startswith("action_"):
+            parts = data.split("_", 2)
+            action = parts[1]
+            strategy_id = parts[2]
+            await execute_strategy_action(query, strategy_id, action)
+        elif data.startswith("logs_"):
+            strategy_id = data.replace("logs_", "")
+            await show_strategy_logs(query, strategy_id)
+        elif data.startswith("config_"):
+            strategy_id = data.replace("config_", "")
+            await show_strategy_config(query, strategy_id)
+        elif data.startswith("stats_"):
+            strategy_id = data.replace("stats_", "")
+            await show_strategy_stats(query, strategy_id)
+        elif data.startswith("toggle_"):
+            strategy_id = data.replace("toggle_", "")
+            await toggle_strategy_dry_run(query, strategy_id)
+        elif data.startswith("confirm_live_"):
+            strategy_id = data.replace("confirm_live_", "")
+            await execute_mode_change(query, strategy_id, False)
+        elif data.startswith("stake_"):
+            strategy_id = data.replace("stake_", "")
+            await show_stake_config(query, strategy_id)
+        elif data.startswith("set_stake_"):
+            parts = data.split("_", 3)
+            strategy_id = parts[2]
+            stake_amount = int(parts[3])
+            await set_stake_amount(query, strategy_id, stake_amount)
+        elif data == "stats_general":
+            await show_general_stats(query)
+        else:
+            await query.edit_message_text("❌ Comando não reconhecido.")
             
-            if result.returncode == 0:
-                results.append(f"✅ {strategy_info['name']}: Parada")
-            else:
-                results.append(f"❌ {strategy_info['name']}: Erro")
-        except Exception as e:
-            results.append(f"❌ {strategy_info['name']}: {str(e)}")
-    
-    message = "🚨 <b>PARADA DE EMERGÊNCIA CONCLUÍDA</b>\n\n"
-    message += "\n".join(results)
-    
-    await update.message.reply_text(message, parse_mode='HTML')
+    except NameError as e:
+        logger.error(f"🚨 NameError no callback {data}: {e}")
+        await query.edit_message_text(f"❌ Erro interno: Função não encontrada.\n\nCallback: {data}\nErro: {str(e)}")
+    except Exception as e:
+        logger.error(f"🚨 Erro no callback {data}: {e}")
+        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
 
-async def quick_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Comando /quick - Status rápido sem botões"""
-    if not commander.is_admin(update.effective_user.id):
-        await update.message.reply_text("❌ Acesso negado.")
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler para capturar erros"""
+    logger.error(f"🚨 Erro capturado: {context.error}")
+    logger.error(f"📍 Update: {update}")
+    
+    try:
+        if update and update.effective_chat:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Ocorreu um erro interno. Por favor, tente novamente."
+            )
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem de erro: {e}")
+
+def main():
+    """Função principal"""
+    if not TOKEN:
+        logger.error("❌ TELEGRAM_TOKEN não configurado!")
         return
     
-    message = "⚡ <b>STATUS RÁPIDO</b>\n\n"
+    if not CHAT_ID:
+        logger.error("❌ TELEGRAM_CHAT_ID não configurado!")
+        return
     
-    for strategy_id, strategy_info in STRATEGIES.items():
-        status = await commander.get_container_status(strategy_info['container'])
-        summary = commander.controller.get_strategy_summary(strategy_id)
-        
-        status_emoji = "🟢" if status['running'] else "🔴"
-        mode_emoji = "🟡" if summary.get('dry_run', True) else "🔴"
-        
-        message += f"{status_emoji}{mode_emoji} {strategy_info['name']}: {status['status']}\n"
+    logger.info(f"🔑 Token configurado: {TOKEN[:10]}...")
+    logger.info(f"👤 Chat ID configurado: {CHAT_ID}")
+    logger.info(f"👥 Usuários admin: {ADMIN_USERS}")
     
-    await update.message.reply_text(message, parse_mode='HTML')#
- Executar o bot apenas se este arquivo for executado diretamente
+    application = Application.builder().token(TOKEN).build()
+    
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CallbackQueryHandler(button_callback))
+    
+    application.add_error_handler(error_handler)
+    
+    logger.info("🤖 Telegram Commander iniciado!")
+    application.run_polling()
+
 if __name__ == "__main__":
     main()

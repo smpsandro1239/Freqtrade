@@ -125,6 +125,10 @@ class TelegramCommander:
 # Instância global
 commander = TelegramCommander()
 
+# ============================================================================
+# FUNÇÕES DE COMANDO
+# ============================================================================
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Comando /start - Menu principal"""
     logger.info(f"📱 Comando /start recebido de {update.effective_user.id}")
@@ -203,78 +207,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(message, parse_mode='HTML')
 
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Callback para botões inline"""
-    query = update.callback_query
-    await query.answer()
-    
-    if not commander.is_admin(query.from_user.id):
-        await query.edit_message_text("❌ Acesso negado.")
-        return
-    
-    data = query.data
-    logger.info(f"🔘 Callback recebido: {data}")
-    
-    # Validar callback data
-    if not data or data.strip() == "":
-        await query.edit_message_text("❌ Comando inválido (callback vazio).")
-        return
-    
-    try:
-        if data == "status_all":
-            await show_status_all(query)
-        elif data == "control_menu":
-            await show_control_menu(query)
-        elif data == "stats_menu":
-            await show_stats_menu(query)
-        elif data == "config_menu":
-            await show_config_menu(query)
-        elif data == "help":
-            await show_help_menu(query)
-        elif data == "main_menu":
-            await show_main_menu(query)
-        elif data.startswith("strategy_"):
-            strategy_id = data.replace("strategy_", "")
-            await show_strategy_control(query, strategy_id)
-        elif data.startswith("action_"):
-            parts = data.split("_", 2)
-            action = parts[1]
-            strategy_id = parts[2]
-            await execute_strategy_action(query, strategy_id, action)
-        elif data.startswith("logs_"):
-            strategy_id = data.replace("logs_", "")
-            await show_strategy_logs(query, strategy_id)
-        elif data.startswith("config_"):
-            strategy_id = data.replace("config_", "")
-            await show_strategy_config(query, strategy_id)
-        elif data.startswith("stats_"):
-            strategy_id = data.replace("stats_", "")
-            await show_strategy_stats(query, strategy_id)
-        elif data.startswith("toggle_"):
-            strategy_id = data.replace("toggle_", "")
-            await toggle_strategy_dry_run(query, strategy_id)
-        elif data.startswith("confirm_live_"):
-            strategy_id = data.replace("confirm_live_", "")
-            await execute_mode_change(query, strategy_id, False)
-        elif data.startswith("stake_"):
-            strategy_id = data.replace("stake_", "")
-            await show_stake_config(query, strategy_id)
-        elif data.startswith("set_stake_"):
-            parts = data.split("_", 3)
-            strategy_id = parts[2]
-            stake_amount = int(parts[3])
-            await set_stake_amount(query, strategy_id, stake_amount)
-        elif data == "stats_general":
-            await show_general_stats(query)
-        else:
-            await query.edit_message_text("❌ Comando não reconhecido.")
-            
-    except NameError as e:
-        logger.error(f"🚨 NameError no callback {data}: {e}")
-        await query.edit_message_text(f"❌ Erro interno: Função não encontrada.\n\nCallback: {data}\nErro: {str(e)}")
-    except Exception as e:
-        logger.error(f"🚨 Erro no callback {data}: {e}")
-        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
+# ============================================================================
+# FUNÇÕES DE MENU
+# ============================================================================
 
 async def show_status_all(query):
     """Mostrar status detalhado de todas as estratégias"""
@@ -427,56 +362,9 @@ Escolha uma opção abaixo para começar:
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler para capturar erros"""
-    logger.error(f"🚨 Erro capturado: {context.error}")
-    logger.error(f"📍 Update: {update}")
-    
-    # Tentar enviar mensagem de erro para o usuário
-    try:
-        if update and update.effective_chat:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="❌ Ocorreu um erro interno. Por favor, tente novamente."
-            )
-    except Exception as e:
-        logger.error(f"Erro ao enviar mensagem de erro: {e}")
-
-def main():
-    """Função principal"""
-    if not TOKEN:
-        logger.error("❌ TELEGRAM_TOKEN não configurado!")
-        return
-    
-    if not CHAT_ID:
-        logger.error("❌ TELEGRAM_CHAT_ID não configurado!")
-        return
-    
-    logger.info(f"🔑 Token configurado: {TOKEN[:10]}...")
-    logger.info(f"👤 Chat ID configurado: {CHAT_ID}")
-    logger.info(f"👥 Usuários admin: {ADMIN_USERS}")
-    
-    # Criar aplicação
-    application = Application.builder().token(TOKEN).build()
-    
-    # Adicionar handlers
-    application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("status", status_command))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("control", control_command))
-    application.add_handler(CommandHandler("stats", stats_command))
-    application.add_handler(CommandHandler("emergency", emergency_stop_command))
-    application.add_handler(CommandHandler("quick", quick_status_command))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    
-    # Adicionar handler de erro
-    application.add_error_handler(error_handler)
-    
-    # Iniciar bot
-    logger.info("🤖 Telegram Commander iniciado!")
-    application.run_polling()
-
-# Remover esta chamada - será movida para o final
+# ============================================================================
+# FUNÇÕES DE CONTROLE DE ESTRATÉGIAS
+# ============================================================================
 
 async def show_strategy_control(query, strategy_id: str):
     """Mostrar controles de uma estratégia específica"""
@@ -741,6 +629,62 @@ async def show_strategy_stats(query, strategy_id: str):
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
+async def show_general_stats(query):
+    """Mostrar estatísticas gerais de todas as estratégias"""
+    message = "📈 <b>ESTATÍSTICAS GERAIS</b>\n\n"
+    
+    total_trades = 0
+    total_profit = 0
+    total_winning = 0
+    total_losing = 0
+    
+    for strategy_id, strategy_info in STRATEGIES.items():
+        try:
+            stats = commander.stats.get_strategy_stats(strategy_id)
+            
+            trades = stats.get('total_trades', 0)
+            profit = stats.get('total_profit', 0)
+            winning = stats.get('winning_trades', 0)
+            losing = stats.get('losing_trades', 0)
+            
+            total_trades += trades
+            total_profit += profit
+            total_winning += winning
+            total_losing += losing
+            
+            status = await commander.get_container_status(strategy_info['container'])
+            status_emoji = "🟢" if status['running'] else "🔴"
+            
+            message += f"{status_emoji} <b>{strategy_info['name']}</b>\n"
+            message += f"   Trades: {trades} | P&L: {profit:.2f} USDT\n"
+            message += f"   Win Rate: {(winning/(trades or 1)*100):.1f}%\n\n"
+            
+        except Exception as e:
+            message += f"🔴 <b>{strategy_info['name']}</b>\n"
+            message += f"   Erro: Sem dados disponíveis\n\n"
+    
+    # Resumo geral
+    overall_win_rate = (total_winning / (total_trades or 1)) * 100
+    
+    message += f"📊 <b>RESUMO GERAL:</b>\n"
+    message += f"• Total de Trades: {total_trades}\n"
+    message += f"• P&L Total: {total_profit:.2f} USDT\n"
+    message += f"• Win Rate Geral: {overall_win_rate:.1f}%\n"
+    message += f"• Trades Ganhos: {total_winning}\n"
+    message += f"• Trades Perdidos: {total_losing}\n"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔄 Atualizar", callback_data="stats_general")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data="stats_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+# ============================================================================
+# FUNÇÕES DE CONFIGURAÇÃO AVANÇADA
+# ============================================================================
+
 async def toggle_strategy_dry_run(query, strategy_id: str):
     """Alternar modo dry-run de uma estratégia"""
     if strategy_id not in STRATEGIES:
@@ -812,58 +756,6 @@ async def execute_mode_change(query, strategy_id: str, dry_run: bool):
         keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"strategy_{strategy_id}")]]
     
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
-
-async def show_general_stats(query):
-    """Mostrar estatísticas gerais de todas as estratégias"""
-    message = "📈 <b>ESTATÍSTICAS GERAIS</b>\n\n"
-    
-    total_trades = 0
-    total_profit = 0
-    total_winning = 0
-    total_losing = 0
-    
-    for strategy_id, strategy_info in STRATEGIES.items():
-        try:
-            stats = commander.stats.get_strategy_stats(strategy_id)
-            
-            trades = stats.get('total_trades', 0)
-            profit = stats.get('total_profit', 0)
-            winning = stats.get('winning_trades', 0)
-            losing = stats.get('losing_trades', 0)
-            
-            total_trades += trades
-            total_profit += profit
-            total_winning += winning
-            total_losing += losing
-            
-            status = await commander.get_container_status(strategy_info['container'])
-            status_emoji = "🟢" if status['running'] else "🔴"
-            
-            message += f"{status_emoji} <b>{strategy_info['name']}</b>\n"
-            message += f"   Trades: {trades} | P&L: {profit:.2f} USDT\n"
-            message += f"   Win Rate: {(winning/(trades or 1)*100):.1f}%\n\n"
-            
-        except Exception as e:
-            message += f"🔴 <b>{strategy_info['name']}</b>\n"
-            message += f"   Erro: Sem dados disponíveis\n\n"
-    
-    # Resumo geral
-    overall_win_rate = (total_winning / (total_trades or 1)) * 100
-    
-    message += f"📊 <b>RESUMO GERAL:</b>\n"
-    message += f"• Total de Trades: {total_trades}\n"
-    message += f"• P&L Total: {total_profit:.2f} USDT\n"
-    message += f"• Win Rate Geral: {overall_win_rate:.1f}%\n"
-    message += f"• Trades Ganhos: {total_winning}\n"
-    message += f"• Trades Perdidos: {total_losing}\n"
-    
-    keyboard = [
-        [InlineKeyboardButton("🔄 Atualizar", callback_data="stats_general")],
-        [InlineKeyboardButton("🔙 Voltar", callback_data="stats_menu")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
 async def show_stake_config(query, strategy_id: str):
@@ -952,8 +844,87 @@ async def set_stake_amount(query, strategy_id: str, stake_amount: int):
         keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data=f"config_{strategy_id}")]]
     
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')# 
-Comandos adicionais úteis
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')# =
+===========================================================================
+# CALLBACK HANDLER - DEVE SER DEFINIDO APÓS TODAS AS FUNÇÕES
+# ============================================================================
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Callback para botões inline"""
+    query = update.callback_query
+    await query.answer()
+    
+    if not commander.is_admin(query.from_user.id):
+        await query.edit_message_text("❌ Acesso negado.")
+        return
+    
+    data = query.data
+    logger.info(f"🔘 Callback recebido: {data}")
+    
+    # Validar callback data
+    if not data or data.strip() == "":
+        await query.edit_message_text("❌ Comando inválido (callback vazio).")
+        return
+    
+    try:
+        if data == "status_all":
+            await show_status_all(query)
+        elif data == "control_menu":
+            await show_control_menu(query)
+        elif data == "stats_menu":
+            await show_stats_menu(query)
+        elif data == "config_menu":
+            await show_config_menu(query)
+        elif data == "help":
+            await show_help_menu(query)
+        elif data == "main_menu":
+            await show_main_menu(query)
+        elif data.startswith("strategy_"):
+            strategy_id = data.replace("strategy_", "")
+            await show_strategy_control(query, strategy_id)
+        elif data.startswith("action_"):
+            parts = data.split("_", 2)
+            action = parts[1]
+            strategy_id = parts[2]
+            await execute_strategy_action(query, strategy_id, action)
+        elif data.startswith("logs_"):
+            strategy_id = data.replace("logs_", "")
+            await show_strategy_logs(query, strategy_id)
+        elif data.startswith("config_"):
+            strategy_id = data.replace("config_", "")
+            await show_strategy_config(query, strategy_id)
+        elif data.startswith("stats_"):
+            strategy_id = data.replace("stats_", "")
+            await show_strategy_stats(query, strategy_id)
+        elif data.startswith("toggle_"):
+            strategy_id = data.replace("toggle_", "")
+            await toggle_strategy_dry_run(query, strategy_id)
+        elif data.startswith("confirm_live_"):
+            strategy_id = data.replace("confirm_live_", "")
+            await execute_mode_change(query, strategy_id, False)
+        elif data.startswith("stake_"):
+            strategy_id = data.replace("stake_", "")
+            await show_stake_config(query, strategy_id)
+        elif data.startswith("set_stake_"):
+            parts = data.split("_", 3)
+            strategy_id = parts[2]
+            stake_amount = int(parts[3])
+            await set_stake_amount(query, strategy_id, stake_amount)
+        elif data == "stats_general":
+            await show_general_stats(query)
+        else:
+            await query.edit_message_text("❌ Comando não reconhecido.")
+            
+    except NameError as e:
+        logger.error(f"🚨 NameError no callback {data}: {e}")
+        await query.edit_message_text(f"❌ Erro interno: Função não encontrada.\n\nCallback: {data}\nErro: {str(e)}")
+    except Exception as e:
+        logger.error(f"🚨 Erro no callback {data}: {e}")
+        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
+
+# ============================================================================
+# COMANDOS ADICIONAIS
+# ============================================================================
 
 async def control_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Comando /control - Acesso direto ao menu de controle"""
@@ -1033,7 +1004,68 @@ async def quick_status_command(update: Update, context: ContextTypes.DEFAULT_TYP
         
         message += f"{status_emoji}{mode_emoji} {strategy_info['name']}: {status['status']}\n"
     
-    await update.message.reply_text(message, parse_mode='HTML')#
- Executar o bot apenas se este arquivo for executado diretamente
+    await update.message.reply_text(message, parse_mode='HTML')
+
+# ============================================================================
+# ERROR HANDLER
+# ============================================================================
+
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler para capturar erros"""
+    logger.error(f"🚨 Erro capturado: {context.error}")
+    logger.error(f"📍 Update: {update}")
+    
+    # Tentar enviar mensagem de erro para o usuário
+    try:
+        if update and update.effective_chat:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Ocorreu um erro interno. Por favor, tente novamente."
+            )
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem de erro: {e}")
+
+# ============================================================================
+# FUNÇÃO MAIN - DEVE SER DEFINIDA APÓS TODAS AS OUTRAS FUNÇÕES
+# ============================================================================
+
+def main():
+    """Função principal"""
+    if not TOKEN:
+        logger.error("❌ TELEGRAM_TOKEN não configurado!")
+        return
+    
+    if not CHAT_ID:
+        logger.error("❌ TELEGRAM_CHAT_ID não configurado!")
+        return
+    
+    logger.info(f"🔑 Token configurado: {TOKEN[:10]}...")
+    logger.info(f"👤 Chat ID configurado: {CHAT_ID}")
+    logger.info(f"👥 Usuários admin: {ADMIN_USERS}")
+    
+    # Criar aplicação
+    application = Application.builder().token(TOKEN).build()
+    
+    # Adicionar handlers
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("control", control_command))
+    application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("emergency", emergency_stop_command))
+    application.add_handler(CommandHandler("quick", quick_status_command))
+    application.add_handler(CallbackQueryHandler(button_callback))
+    
+    # Adicionar handler de erro
+    application.add_error_handler(error_handler)
+    
+    # Iniciar bot
+    logger.info("🤖 Telegram Commander iniciado!")
+    application.run_polling()
+
+# ============================================================================
+# EXECUÇÃO PRINCIPAL - DEVE SER A ÚLTIMA LINHA DO ARQUIVO
+# ============================================================================
+
 if __name__ == "__main__":
     main()
