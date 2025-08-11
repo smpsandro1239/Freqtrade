@@ -16,6 +16,8 @@ from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from freqtrade_stats import FreqtradeStats
 from strategy_controller import StrategyController
+from enhanced_stats import enhanced_stats
+from trade_notifier import trade_notifier
 
 # Configuração
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -263,6 +265,10 @@ async def show_stats_menu(query):
     
     keyboard.append([
         InlineKeyboardButton("📈 Resumo Geral", callback_data="stats_general")
+    ])
+    keyboard.append([
+        InlineKeyboardButton("📊 Stats Horárias", callback_data="hourly_stats"),
+        InlineKeyboardButton("🔔 Notificações", callback_data="notifications_menu")
     ])
     keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -645,6 +651,166 @@ async def show_general_stats(query):
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
 
+async def show_hourly_stats_menu(query):
+    """Mostrar menu de estatísticas horárias"""
+    message = "📊 <b>ESTATÍSTICAS HORÁRIAS</b>\n\nEscolha uma estratégia:\n\n"
+    
+    keyboard = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        keyboard.append([
+            InlineKeyboardButton(
+                f"📊 {strategy_info['name']}", 
+                callback_data=f"hourly_{strategy_id}"
+            )
+        ])
+    
+    keyboard.append([
+        InlineKeyboardButton("📈 Todas as Estratégias", callback_data="hourly_all")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="stats_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_hourly_stats(query, strategy_id: str):
+    """Mostrar estatísticas horárias de uma estratégia"""
+    try:
+        if strategy_id == "all":
+            message = "📊 <b>ESTATÍSTICAS HORÁRIAS - TODAS</b>\n\n"
+            
+            for strat_id, strat_info in STRATEGIES.items():
+                hourly_summary = enhanced_stats.format_hourly_summary(strat_id, 6)
+                message += f"🔹 <b>{strat_info['name']}</b>\n"
+                
+                # Get last 6 hours summary
+                hourly_data = enhanced_stats.get_hourly_stats(strat_id, 6)
+                if hourly_data:
+                    total_trades = sum(h['trades'] for h in hourly_data)
+                    total_profit = sum(h['profit'] for h in hourly_data)
+                    profit_emoji = "🟢" if total_profit > 0 else "🔴" if total_profit < 0 else "⚪"
+                    
+                    message += f"   {profit_emoji} {total_trades} trades | {total_profit:.4f} USDT\n\n"
+                else:
+                    message += f"   ⚪ Sem dados disponíveis\n\n"
+        else:
+            strategy_info = STRATEGIES.get(strategy_id)
+            if not strategy_info:
+                await query.edit_message_text("❌ Estratégia não encontrada.")
+                return
+            
+            message = enhanced_stats.format_hourly_summary(strategy_id, 12)
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Atualizar", callback_data=f"hourly_{strategy_id}")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="hourly_stats")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao obter estatísticas: {str(e)}")
+
+async def show_notifications_menu(query):
+    """Mostrar menu de notificações"""
+    # Check if notifications are active
+    notifications_status = "🟢 ATIVAS" if trade_notifier.monitoring else "🔴 INATIVAS"
+    
+    message = f"🔔 <b>NOTIFICAÇÕES DE TRADE</b>\n\n"
+    message += f"Status: {notifications_status}\n\n"
+    message += f"📱 <b>Funcionalidades:</b>\n"
+    message += f"• Alertas de compra em tempo real\n"
+    message += f"• Alertas de venda com P&L\n"
+    message += f"• Resumo diário automático\n"
+    message += f"• Monitoramento contínuo\n\n"
+    
+    if trade_notifier.monitoring:
+        message += f"⚡ Monitorando todas as estratégias ativas"
+    else:
+        message += f"💤 Notificações desativadas"
+    
+    keyboard = []
+    
+    if trade_notifier.monitoring:
+        keyboard.append([
+            InlineKeyboardButton("🔴 Desativar Notificações", callback_data="notifications_stop")
+        ])
+    else:
+        keyboard.append([
+            InlineKeyboardButton("🟢 Ativar Notificações", callback_data="notifications_start")
+        ])
+    
+    keyboard.append([
+        InlineKeyboardButton("📊 Enviar Resumo Diário", callback_data="send_daily_summary")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="stats_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def toggle_notifications(query, action: str):
+    """Ativar/desativar notificações"""
+    try:
+        if action == "start":
+            if not trade_notifier.monitoring:
+                # Set up the notifier with current bot and chat
+                trade_notifier.set_telegram_bot(query.bot, query.message.chat_id)
+                
+                # Start monitoring in background
+                strategies = list(STRATEGIES.keys())
+                asyncio.create_task(trade_notifier.start_monitoring(strategies))
+                
+                message = "🟢 <b>NOTIFICAÇÕES ATIVADAS!</b>\n\n"
+                message += "✅ Monitoramento iniciado\n"
+                message += "📱 Você receberá alertas de:\n"
+                message += "• Compras realizadas\n"
+                message += "• Vendas com resultado\n"
+                message += "• Resumos diários\n\n"
+                message += "🔔 Notificações ativas para todas as estratégias"
+            else:
+                message = "⚠️ Notificações já estão ativas!"
+        
+        elif action == "stop":
+            if trade_notifier.monitoring:
+                trade_notifier.stop_monitoring()
+                message = "🔴 <b>NOTIFICAÇÕES DESATIVADAS</b>\n\n"
+                message += "❌ Monitoramento parado\n"
+                message += "💤 Você não receberá mais alertas automáticos\n\n"
+                message += "💡 Pode reativar a qualquer momento"
+            else:
+                message = "⚠️ Notificações já estão inativas!"
+        
+        keyboard = [
+            [InlineKeyboardButton("🔙 Voltar", callback_data="notifications_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao configurar notificações: {str(e)}")
+
+async def send_daily_summary_manual(query):
+    """Enviar resumo diário manualmente"""
+    try:
+        strategies = list(STRATEGIES.keys())
+        await trade_notifier.send_daily_summary(strategies)
+        
+        message = "📊 <b>RESUMO ENVIADO!</b>\n\n"
+        message += "✅ Resumo diário enviado com sucesso\n"
+        message += "📈 Verifique as mensagens acima\n\n"
+        message += "💡 O resumo automático é enviado diariamente às 23:00"
+        
+        keyboard = [
+            [InlineKeyboardButton("🔙 Voltar", callback_data="notifications_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao enviar resumo: {str(e)}")
+
 async def toggle_strategy_dry_run(query, strategy_id: str):
     """Alternar modo dry-run de uma estratégia"""
     if strategy_id not in STRATEGIES:
@@ -863,6 +1029,19 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await set_stake_amount(query, strategy_id, stake_amount)
         elif data == "stats_general":
             await show_general_stats(query)
+        elif data == "hourly_stats":
+            await show_hourly_stats_menu(query)
+        elif data.startswith("hourly_"):
+            strategy_id = data.replace("hourly_", "")
+            await show_hourly_stats(query, strategy_id)
+        elif data == "notifications_menu":
+            await show_notifications_menu(query)
+        elif data == "notifications_start":
+            await toggle_notifications(query, "start")
+        elif data == "notifications_stop":
+            await toggle_notifications(query, "stop")
+        elif data == "send_daily_summary":
+            await send_daily_summary_manual(query)
         else:
             await query.edit_message_text("❌ Comando não reconhecido.")
             
