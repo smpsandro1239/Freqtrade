@@ -18,6 +18,7 @@ from freqtrade_stats import FreqtradeStats
 from strategy_controller import StrategyController
 from enhanced_stats import enhanced_stats
 from trade_notifier import trade_notifier
+from trend_predictor import trend_predictor
 
 # Configuração
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -269,6 +270,9 @@ async def show_stats_menu(query):
     keyboard.append([
         InlineKeyboardButton("📊 Stats Horárias", callback_data="hourly_stats"),
         InlineKeyboardButton("🔔 Notificações", callback_data="notifications_menu")
+    ])
+    keyboard.append([
+        InlineKeyboardButton("🔮 Previsões", callback_data="predictions_menu")
     ])
     keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -811,6 +815,165 @@ async def send_daily_summary_manual(query):
     except Exception as e:
         await query.edit_message_text(f"❌ Erro ao enviar resumo: {str(e)}")
 
+async def show_predictions_menu(query):
+    """Mostrar menu de previsões de tendência"""
+    message = "🔮 <b>PREVISÕES DE TENDÊNCIA</b>\n\n"
+    message += "📈 <b>Análise Preditiva Avançada</b>\n"
+    message += "Baseada em padrões históricos e indicadores técnicos\n\n"
+    message += "🎯 <b>Funcionalidades:</b>\n"
+    message += "• Previsão de tendências (alta/baixa/lateral)\n"
+    message += "• Análise de confiança e força do sinal\n"
+    message += "• Identificação de melhores horários\n"
+    message += "• Recomendações de ação\n"
+    message += "• Análise de risco\n\n"
+    message += "Escolha uma estratégia para análise:\n"
+    
+    keyboard = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        keyboard.append([
+            InlineKeyboardButton(
+                f"🔮 {strategy_info['name']}", 
+                callback_data=f"predict_{strategy_id}"
+            )
+        ])
+    
+    keyboard.append([
+        InlineKeyboardButton("📊 Análise Geral", callback_data="predict_all")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="stats_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_strategy_prediction(query, strategy_id: str):
+    """Mostrar previsão detalhada de uma estratégia"""
+    try:
+        if strategy_id == "all":
+            message = "🔮 <b>ANÁLISE PREDITIVA GERAL</b>\n\n"
+            
+            total_bullish = 0
+            total_bearish = 0
+            total_sideways = 0
+            high_confidence_predictions = []
+            
+            for strat_id, strat_info in STRATEGIES.items():
+                try:
+                    prediction = trend_predictor.generate_prediction(strat_id)
+                    
+                    if prediction['prediction'] == 'upward':
+                        trend_emoji = "📈"
+                        total_bullish += 1
+                    elif prediction['prediction'] == 'downward':
+                        trend_emoji = "📉"
+                        total_bearish += 1
+                    else:
+                        trend_emoji = "➡️"
+                        total_sideways += 1
+                    
+                    confidence = prediction['confidence']
+                    conf_emoji = "🟢" if confidence > 0.7 else "🟡" if confidence > 0.5 else "🔴"
+                    
+                    message += f"{trend_emoji} <b>{strat_info['name']}</b>\n"
+                    message += f"   {conf_emoji} Confiança: {confidence:.1%} | {prediction['signal_strength'].title()}\n"
+                    message += f"   💡 {prediction['recommended_action']}\n\n"
+                    
+                    if confidence > 0.7:
+                        high_confidence_predictions.append({
+                            'strategy': strat_info['name'],
+                            'prediction': prediction['prediction'],
+                            'confidence': confidence
+                        })
+                        
+                except Exception as e:
+                    message += f"🔴 <b>{strat_info['name']}</b>\n"
+                    message += f"   ❌ Erro na análise\n\n"
+            
+            # Market sentiment summary
+            total_strategies = len(STRATEGIES)
+            message += f"📊 <b>SENTIMENTO GERAL DO MERCADO:</b>\n"
+            message += f"📈 Bullish: {total_bullish}/{total_strategies} ({total_bullish/total_strategies*100:.0f}%)\n"
+            message += f"📉 Bearish: {total_bearish}/{total_strategies} ({total_bearish/total_strategies*100:.0f}%)\n"
+            message += f"➡️ Lateral: {total_sideways}/{total_strategies} ({total_sideways/total_strategies*100:.0f}%)\n\n"
+            
+            if high_confidence_predictions:
+                message += f"⭐ <b>SINAIS DE ALTA CONFIANÇA:</b>\n"
+                for pred in high_confidence_predictions[:3]:
+                    trend_emoji = "📈" if pred['prediction'] == 'upward' else "📉" if pred['prediction'] == 'downward' else "➡️"
+                    message += f"{trend_emoji} {pred['strategy']} - {pred['confidence']:.1%}\n"
+            else:
+                message += f"⚠️ <b>Nenhum sinal de alta confiança detectado</b>\n"
+            
+        else:
+            strategy_info = STRATEGIES.get(strategy_id)
+            if not strategy_info:
+                await query.edit_message_text("❌ Estratégia não encontrada.")
+                return
+            
+            message = trend_predictor.format_prediction_message(strategy_id)
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Atualizar Análise", callback_data=f"predict_{strategy_id}")],
+            [InlineKeyboardButton("📊 Ver Estatísticas", callback_data=f"stats_{strategy_id}" if strategy_id != "all" else "stats_general")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="predictions_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao gerar previsão: {str(e)}")
+
+async def send_prediction_alert(query, strategy_id: str):
+    """Enviar alerta de previsão"""
+    try:
+        prediction = trend_predictor.generate_prediction(strategy_id)
+        
+        if prediction['confidence'] > 0.7 and prediction['signal_strength'] == 'strong':
+            strategy_info = STRATEGIES.get(strategy_id, {'name': strategy_id})
+            
+            if prediction['prediction'] == 'upward':
+                alert_emoji = "🚀"
+                alert_text = "SINAL DE ALTA FORTE"
+            elif prediction['prediction'] == 'downward':
+                alert_emoji = "⚠️"
+                alert_text = "SINAL DE BAIXA FORTE"
+            else:
+                return  # Don't send alerts for sideways
+            
+            message = f"{alert_emoji} <b>ALERTA DE PREVISÃO</b>\n\n"
+            message += f"📊 <b>Estratégia:</b> {strategy_info['name']}\n"
+            message += f"🎯 <b>Sinal:</b> {alert_text}\n"
+            message += f"🟢 <b>Confiança:</b> {prediction['confidence']:.1%}\n"
+            message += f"💡 <b>Ação:</b> {prediction['recommended_action']}\n\n"
+            message += f"⏰ <b>Gerado em:</b> {datetime.now().strftime('%H:%M:%S')}"
+            
+            # Send to current chat
+            await query.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=message,
+                parse_mode='HTML'
+            )
+            
+            confirmation = f"🚀 <b>Alerta enviado!</b>\n\n"
+            confirmation += f"Sinal de alta confiança detectado para {strategy_info['name']}\n"
+            confirmation += f"Confiança: {prediction['confidence']:.1%}"
+            
+        else:
+            confirmation = f"📊 <b>Análise Concluída</b>\n\n"
+            confirmation += f"Nenhum sinal de alta confiança detectado no momento.\n"
+            confirmation += f"Confiança atual: {prediction['confidence']:.1%}\n"
+            confirmation += f"Continue monitorando para oportunidades."
+        
+        keyboard = [
+            [InlineKeyboardButton("🔙 Voltar", callback_data="predictions_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(confirmation, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao enviar alerta: {str(e)}")
+
 async def toggle_strategy_dry_run(query, strategy_id: str):
     """Alternar modo dry-run de uma estratégia"""
     if strategy_id not in STRATEGIES:
@@ -1042,6 +1205,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await toggle_notifications(query, "stop")
         elif data == "send_daily_summary":
             await send_daily_summary_manual(query)
+        elif data == "predictions_menu":
+            await show_predictions_menu(query)
+        elif data.startswith("predict_"):
+            strategy_id = data.replace("predict_", "")
+            await show_strategy_prediction(query, strategy_id)
+        elif data.startswith("alert_"):
+            strategy_id = data.replace("alert_", "")
+            await send_prediction_alert(query, strategy_id)
         else:
             await query.edit_message_text("❌ Comando não reconhecido.")
             
@@ -1146,6 +1317,59 @@ async def quick_status_command(update: Update, context: ContextTypes.DEFAULT_TYP
     
     await update.message.reply_text(message, parse_mode='HTML')
 
+async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /predict - Previsões rápidas de todas as estratégias"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    message = "🔮 <b>PREVISÕES RÁPIDAS</b>\n\n"
+    
+    high_confidence_signals = []
+    
+    for strategy_id, strategy_info in STRATEGIES.items():
+        try:
+            prediction = trend_predictor.generate_prediction(strategy_id)
+            
+            if prediction['prediction'] == 'upward':
+                trend_emoji = "📈"
+                trend_text = "ALTA"
+            elif prediction['prediction'] == 'downward':
+                trend_emoji = "📉"
+                trend_text = "BAIXA"
+            else:
+                trend_emoji = "➡️"
+                trend_text = "LATERAL"
+            
+            confidence = prediction['confidence']
+            conf_emoji = "🟢" if confidence > 0.7 else "🟡" if confidence > 0.5 else "🔴"
+            
+            message += f"{trend_emoji} <b>{strategy_info['name']}</b>\n"
+            message += f"   {conf_emoji} {trend_text} - {confidence:.1%}\n"
+            message += f"   💡 {prediction['recommended_action']}\n\n"
+            
+            if confidence > 0.7:
+                high_confidence_signals.append({
+                    'name': strategy_info['name'],
+                    'prediction': trend_text,
+                    'confidence': confidence
+                })
+                
+        except Exception as e:
+            message += f"🔴 <b>{strategy_info['name']}</b>\n"
+            message += f"   ❌ Erro na análise\n\n"
+    
+    if high_confidence_signals:
+        message += f"⭐ <b>SINAIS DE ALTA CONFIANÇA:</b>\n"
+        for signal in high_confidence_signals:
+            message += f"🚀 {signal['name']}: {signal['prediction']} ({signal['confidence']:.1%})\n"
+    else:
+        message += f"📊 <i>Nenhum sinal de alta confiança no momento</i>\n"
+    
+    message += f"\n💡 Use /stats → 🔮 Previsões para análise detalhada"
+    
+    await update.message.reply_text(message, parse_mode='HTML')
+
 def main():
     """Função principal"""
     if not TOKEN:
@@ -1169,6 +1393,7 @@ def main():
     application.add_handler(CommandHandler("stats", stats_command))
     application.add_handler(CommandHandler("emergency", emergency_stop_command))
     application.add_handler(CommandHandler("quick", quick_status_command))
+    application.add_handler(CommandHandler("predict", predict_command))
     application.add_handler(CallbackQueryHandler(button_callback))
     
     application.add_error_handler(error_handler)

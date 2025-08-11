@@ -108,6 +108,7 @@ Sistema completo de **notificações automáticas** para:
 
 ### 🔧 Comandos Disponíveis
 - `/stats` - Menu de estatísticas completo
+- `/predict` - Previsões rápidas de todas as estratégias
 - `/notifications` - Controle rápido de notificações
 - `/summary` - Resumo diário manual
 
@@ -144,6 +145,116 @@ Sistema completo de **notificações automáticas** para:
 - **Persistência**: Mantém estado entre reinicializações
 - **Isolamento**: Cada estratégia monitorada independentemente
 - **Recursos**: Baixo consumo de CPU/memória
+
+---
+
+## 🔮 Sistema de Previsão de Tendências
+
+### ✨ Nova Funcionalidade Revolucionária
+O sistema agora inclui **análise preditiva avançada** que pode **prever possíveis subidas** baseada em:
+
+- **📊 Análise de padrões históricos** - Identifica tendências recorrentes
+- **📈 Indicadores técnicos** - RSI, momentum, volatilidade
+- **⏰ Padrões temporais** - Melhores horários e dias para trading
+- **🎯 Análise de pares** - Performance por moeda
+- **🧠 Machine Learning** - Algoritmos de predição
+
+### 🎯 Como Funciona
+1. **Coleta de dados**: Analisa últimos 50-100 trades
+2. **Cálculo de indicadores**: RSI, momentum, volatilidade
+3. **Análise de padrões**: Identifica tendências temporais
+4. **Geração de previsão**: Calcula probabilidade de alta/baixa
+5. **Nível de confiança**: Determina força do sinal (65-90%)
+
+### 📱 Como Usar
+1. Digite `/predict` para previsão rápida de todas as estratégias
+2. Ou use `/stats` → **"🔮 Previsões"** para análise detalhada
+3. Escolha uma estratégia específica ou **"Análise Geral"**
+4. Visualize previsões com nível de confiança
+
+### 🚀 Exemplo de Previsão Detalhada
+```
+🔮 PREVISÃO DE TENDÊNCIA
+📊 Estratégia: waveHyperNW
+
+📈 TENDÊNCIA DE ALTA
+🟢 Confiança: 78.5%
+💪 Força do Sinal: Strong
+⏰ Horizonte: Medium Term
+⚠️ Risco: Médio
+
+💡 Recomendação:
+   Considerar posições de compra
+
+🔍 Fatores Chave:
+   • Tendência bullish forte
+   • RSI em zona favorável
+   • Momentum significativo detectado
+
+📈 Análise Técnica:
+   • RSI: 65.2
+   • Win Rate: 72.5%
+   • Trades Analisados: 45
+
+⚡ Melhor Par: BTC/USDT
+
+🕐 Melhores Horários: 14:00, 16:00, 09:00
+```
+
+### 🎯 Previsão Rápida (/predict)
+```
+🔮 PREVISÕES RÁPIDAS
+
+📈 WaveHyperNW Strategy
+   🟢 ALTA - 78.5%
+   💡 Considerar posições de compra
+
+📉 Strategy A
+   🟡 BAIXA - 62.3%
+   💡 Considerar redução de exposição
+
+➡️ Strategy B
+   🔴 LATERAL - 45.2%
+   💡 Aguardar sinais mais claros
+
+⭐ SINAIS DE ALTA CONFIANÇA:
+🚀 WaveHyperNW Strategy: ALTA (78.5%)
+```
+
+### 🧠 Algoritmos de Predição
+
+#### 📊 Análise de Tendência
+- **Slope calculation**: Calcula inclinação da curva de lucros
+- **Moving averages**: Médias móveis de performance
+- **Trend strength**: Força da tendência atual
+
+#### 📈 Indicadores Técnicos
+- **RSI adaptado**: Baseado em histórico de trades
+- **Momentum**: Aceleração de performance
+- **Volatilidade**: Risco e estabilidade
+
+#### ⏰ Padrões Temporais
+- **Análise horária**: Melhores horários para trading
+- **Padrões semanais**: Dias mais lucrativos
+- **Sazonalidade**: Tendências por período
+
+#### 🎯 Nível de Confiança
+- **Alto (>70%)**: Sinal forte, ação recomendada
+- **Médio (50-70%)**: Sinal moderado, cautela
+- **Baixo (<50%)**: Aguardar melhores oportunidades
+
+### 🚨 Alertas Automáticos
+O sistema pode enviar **alertas automáticos** quando:
+- **Confiança > 70%** em previsão de alta
+- **Sinal forte** detectado
+- **Múltiplas estratégias** convergem na mesma direção
+
+### ⚠️ Importante
+- **Não é aconselhamento financeiro**
+- **Baseado em dados históricos**
+- **Mercado pode ser imprevisível**
+- **Use como ferramenta de apoio**
+- **Sempre faça sua própria análise**
 
 ---
 
