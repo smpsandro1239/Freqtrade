@@ -887,6 +887,86 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Erro ao enviar mensagem de erro: {e}")
 
+async def control_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /control - Acesso direto ao menu de controle"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    # Simular callback para mostrar menu de controle
+    class FakeQuery:
+        def __init__(self, chat_id):
+            self.message = type('obj', (object,), {'chat_id': chat_id})()
+        
+        async def edit_message_text(self, text, reply_markup=None, parse_mode=None):
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
+    
+    fake_query = FakeQuery(update.effective_chat.id)
+    await show_control_menu(fake_query)
+
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /stats - Acesso direto às estatísticas"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    # Simular callback para mostrar estatísticas gerais
+    class FakeQuery:
+        def __init__(self, chat_id):
+            self.message = type('obj', (object,), {'chat_id': chat_id})()
+        
+        async def edit_message_text(self, text, reply_markup=None, parse_mode=None):
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
+    
+    fake_query = FakeQuery(update.effective_chat.id)
+    await show_general_stats(fake_query)
+
+async def emergency_stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /emergency - Parar todas as estratégias imediatamente"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    await update.message.reply_text("🚨 <b>PARADA DE EMERGÊNCIA INICIADA</b>\n\nParando todas as estratégias...", parse_mode='HTML')
+    
+    results = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        try:
+            result = subprocess.run([
+                'docker', 'stop', strategy_info['container']
+            ], capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                results.append(f"✅ {strategy_info['name']}: Parada")
+            else:
+                results.append(f"❌ {strategy_info['name']}: Erro")
+        except Exception as e:
+            results.append(f"❌ {strategy_info['name']}: {str(e)}")
+    
+    message = "🚨 <b>PARADA DE EMERGÊNCIA CONCLUÍDA</b>\n\n"
+    message += "\n".join(results)
+    
+    await update.message.reply_text(message, parse_mode='HTML')
+
+async def quick_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /quick - Status rápido sem botões"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    message = "⚡ <b>STATUS RÁPIDO</b>\n\n"
+    
+    for strategy_id, strategy_info in STRATEGIES.items():
+        status = await commander.get_container_status(strategy_info['container'])
+        summary = commander.controller.get_strategy_summary(strategy_id)
+        
+        status_emoji = "🟢" if status['running'] else "🔴"
+        mode_emoji = "🟡" if summary.get('dry_run', True) else "🔴"
+        
+        message += f"{status_emoji}{mode_emoji} {strategy_info['name']}: {status['status']}\n"
+    
+    await update.message.reply_text(message, parse_mode='HTML')
+
 def main():
     """Função principal"""
     if not TOKEN:
@@ -906,6 +986,10 @@ def main():
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("control", control_command))
+    application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("emergency", emergency_stop_command))
+    application.add_handler(CommandHandler("quick", quick_status_command))
     application.add_handler(CallbackQueryHandler(button_callback))
     
     application.add_error_handler(error_handler)

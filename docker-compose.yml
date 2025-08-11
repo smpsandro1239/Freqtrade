@@ -89,8 +89,8 @@ services:
     env_file: .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./user_data:/app/user_data:ro
-      - .:/app/project:ro
+      - ./user_data:/app/user_data
+      - .:/app/project
     depends_on:
       - telegram_bot
       - stratA
