@@ -134,5 +134,38 @@ services:
       - waveEnhanced
     restart: unless-stopped
 
+  dashboard:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.dashboard
+    container_name: ft-dashboard
+    env_file: .env
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./user_data:/freqtrade/user_data:ro
+    depends_on:
+      - redis
+      - telegram_bot
+    restart: unless-stopped
+    environment:
+      - DASHBOARD_SECRET_KEY=${DASHBOARD_SECRET_KEY:-your-secret-key-change-this}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  enhanced_notifier:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.dashboard
+    container_name: ft-enhanced-notifier
+    env_file: .env
+    volumes:
+      - ./user_data:/freqtrade/user_data:ro
+    depends_on:
+      - redis
+      - telegram_bot
+    restart: unless-stopped
+    command: ["python", "enhanced_telegram_notifier.py"]
+
 volumes:
   redis_data:
