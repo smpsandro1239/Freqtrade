@@ -82,7 +82,7 @@ function Show-VpsHelp {
 
 function Execute-DockerCommand {
     param([string]$Command)
-    
+
     # Verificar se Docker está disponível
     try {
         docker --version | Out-Null
@@ -90,7 +90,7 @@ function Execute-DockerCommand {
         Write-Host "❌ Docker não encontrado. Execute a instalação primeiro." -ForegroundColor Red
         return
     }
-    
+
     switch ($Command) {
         "status" {
             Write-Host "📊 Status do sistema:" -ForegroundColor Green
@@ -120,11 +120,11 @@ function Execute-DockerCommand {
 
 function Execute-Toggle {
     param([string]$Mode)
-    
+
     if (Test-Path "scripts/toggle_mode.py") {
         Write-Host "⚖️ Alternando para modo $Mode..." -ForegroundColor Green
         python scripts/toggle_mode.py $Mode
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "🔄 Reiniciando containers..." -ForegroundColor Green
             docker-compose restart
@@ -138,14 +138,14 @@ function Execute-Toggle {
 function Create-Backup {
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $backupDir = "backups/manual_$timestamp"
-    
+
     Write-Host "💾 Criando backup..." -ForegroundColor Green
-    
+
     New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
     Copy-Item -Path "user_data/configs" -Destination "$backupDir/configs" -Recurse -Force
     Copy-Item -Path ".env" -Destination "$backupDir/" -Force -ErrorAction SilentlyContinue
     Copy-Item -Path "docker-compose.yml" -Destination "$backupDir/" -Force
-    
+
     Write-Host "✅ Backup criado em: $backupDir" -ForegroundColor Green
 }
 
@@ -155,7 +155,7 @@ switch ($Action.ToLower()) {
         do {
             Show-Menu
             $choice = Read-Host "Escolha uma opção (1-12)"
-            
+
             switch ($choice) {
                 "1" { Execute-Setup }
                 "2" { Execute-Quick }
@@ -168,10 +168,11 @@ switch ($Action.ToLower()) {
                 "9" { Execute-Toggle "dry" }
                 "10" { Execute-Toggle "live" }
                 "11" { Create-Backup }
-                "12" { Write-Host "👋 Até logo!" -ForegroundColor Green; exit }
+                "12" { Start-Dashboard }
+                "13" { Write-Host "👋 Até logo!" -ForegroundColor Green; exit }
                 default { Write-Host "❌ Opção inválida" -ForegroundColor Red }
             }
-            
+
             if ($choice -ne "12") {
                 Write-Host ""
                 Read-Host "Pressione Enter para continuar"
@@ -199,5 +200,36 @@ switch ($Action.ToLower()) {
         Write-Host ".\run.ps1 status   - Ver status" -ForegroundColor Gray
         Write-Host ".\run.ps1 logs     - Ver logs" -ForegroundColor Gray
         Write-Host ".\run.ps1          - Menu interativo" -ForegroundColor Gray
+    }
+}
+
+function Start-Dashboard {
+    Write-Host "🌐 Iniciando Dashboard Web..." -ForegroundColor Green
+
+    # Verificar se Python está disponível
+    try {
+        python --version | Out-Null
+    } catch {
+        Write-Host "❌ Python não encontrado. Instale Python primeiro." -ForegroundColor Red
+        return
+    }
+
+    # Verificar se o script existe
+    if (-not (Test-Path "start_dashboard.py")) {
+        Write-Host "❌ Script start_dashboard.py não encontrado" -ForegroundColor Red
+        return
+    }
+
+    Write-Host "🚀 Dashboard será acessível em: http://localhost:5000" -ForegroundColor Cyan
+    Write-Host "👤 Login padrão: admin / admin123" -ForegroundColor Yellow
+    Write-Host "🔒 ALTERE A SENHA EM PRODUÇÃO!" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "⏹️ Pressione Ctrl+C para parar o dashboard" -ForegroundColor Gray
+    Write-Host ""
+
+    try {
+        python start_dashboard.py
+    } catch {
+        Write-Host "❌ Erro ao iniciar dashboard: $_" -ForegroundColor Red
     }
 }
