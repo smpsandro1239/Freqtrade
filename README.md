@@ -1,18 +1,58 @@
-# Freqtrade Multi-Strategy Telegram Bot
+# 🚀 Freqtrade Multi-Strategy Telegram Commander
 
-> Fork não-oficial do [**Freqtrade**](https://github.com/freqtrade/freqtrade) com foco em **execução simultânea de múltiplas estratégias** e **notificações em tempo real via Telegram**.
+> Sistema avançado de trading automatizado com **controle total via Telegram**, **IA preditiva** e **trading manual**.
 
-## 🎯 Funcionalidades
+## ✨ Funcionalidades Revolucionárias
 
-- ✅ **Múltiplas estratégias** rodando em paralelo com balances isolados
-- ✅ **Alertas em tempo real** via Telegram (entrada/saída de trades)
-- ✅ **Dashboard horário** com estatísticas consolidadas
-- ✅ **Comando único** para alternar dry-run ↔ live trading
-- ✅ **GitHub Actions** para validação automática de estratégias
-- ✅ **Deploy seguro** com zero-downtime e backups automáticos
-- ✅ **Monitor de saúde** com alertas de containers offline
-- ✅ **Risk management dinâmico** com ajuste automático de stakes
-- ✅ **Backtest diário automatizado** via GitHub Actions
+### 🤖 **Controle Total via Telegram**
+- ✅ **Menu interativo** com navegação intuitiva
+- ✅ **Comandos diretos** para operações rápidas (`/forcebuy`, `/forcesell`, `/adjust`)
+- ✅ **Feedback visual** em tempo real
+- ✅ **Acesso seguro** com autenticação de usuários
+
+### 🔮 **IA Preditiva (Exclusivo)**
+- ✅ **Previsão de tendências** baseada em padrões históricos
+- ✅ **Análise de indicadores técnicos** (RSI, momentum, volatilidade)
+- ✅ **Identificação de oportunidades** antes que aconteçam
+- ✅ **Nível de confiança** de 65-90% para sinais
+
+### 💰 **Trading Manual Avançado**
+- ✅ **Compra/venda forçada** de qualquer par
+- ✅ **Ajuste dinâmico** de estratégias (agressivo/conservador/equilibrado)
+- ✅ **Interface gráfica** completa via Telegram
+- ✅ **Execução imediata** independente dos sinais
+
+### 📊 **Monitoramento Avançado**
+- ✅ **Estatísticas horárias** com dados precisos
+- ✅ **Notificações automáticas** de trades 24/7
+- ✅ **Dashboard em tempo real** via Telegram
+- ✅ **Resumos diários** automáticos às 23:00
+
+## 🎮 Comandos Principais
+
+### 💰 **Trading Manual**
+```bash
+/forcebuy stratA BTC/USDT      # Compra forçada
+/forcesell stratA BTC/USDT     # Venda forçada
+/forcesell stratA all          # Vender todas as posições
+/adjust stratA aggressive      # Modo agressivo (mais penetrável)
+/adjust stratA conservative    # Modo conservador (mais cauteloso)
+/adjust stratA balanced        # Modo equilibrado
+```
+
+### 🔮 **IA Preditiva**
+```bash
+/predict                       # Previsões rápidas de todas as estratégias
+/start → 🔮 Previsões         # Análise detalhada com IA
+```
+
+### 📊 **Monitoramento**
+```bash
+/start                         # Menu principal
+/stats                         # Estatísticas detalhadas
+/status                        # Status geral das estratégias
+/emergency                     # Parada de emergência
+```
 
 ## 🚀 Quick Start
 
