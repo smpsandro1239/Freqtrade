@@ -41,6 +41,39 @@ services:
       --config user_data/configs/waveHyperNW.json
       --strategy WaveHyperNWStrategy
 
+  mlStrategy:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.ml
+    container_name: ft-mlStrategy
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./.env:/freqtrade/.env:ro
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      - redis
+    command: >
+      trade
+      --config user_data/configs/mlStrategySimple.json
+      --strategy MLStrategySimple
+
+  multiTimeframe:
+    <<: *common
+    container_name: ft-multiTimeframe
+    command: >
+      trade
+      --config user_data/configs/multiTimeframe.json
+      --strategy MultiTimeframeStrategy
+
+  waveEnhanced:
+    <<: *common
+    container_name: ft-waveEnhanced
+    command: >
+      trade
+      --config user_data/configs/waveHyperNWEnhanced.json
+      --strategy WaveHyperNWEnhanced
+
   telegram_bot:
     build:
       context: ./scripts
@@ -96,6 +129,9 @@ services:
       - stratA
       - stratB
       - waveHyperNW
+      - mlStrategy
+      - multiTimeframe
+      - waveEnhanced
     restart: unless-stopped
 
 volumes:
