@@ -1,0 +1,72 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ft-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  stratA:
+    image: freqtradeorg/freqtrade:stable
+    container_name: ft-stratA
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./.env:/freqtrade/.env:ro
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      - redis
+    command: >
+      trade
+      --config user_data/configs/stratA.json
+      --strategy SampleStrategyA
+
+  stratB:
+    image: freqtradeorg/freqtrade:stable
+    container_name: ft-stratB
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./.env:/freqtrade/.env:ro
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      - redis
+    command: >
+      trade
+      --config user_data/configs/stratB.json
+      --strategy SampleStrategyB
+
+  waveHyperNW:
+    image: freqtradeorg/freqtrade:stable
+    container_name: ft-waveHyperNW
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./.env:/freqtrade/.env:ro
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      - redis
+    command: >
+      trade
+      --config user_data/configs/waveHyperNW.json
+      --strategy WaveHyperNWStrategy
+
+  telegram_commander:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.commander
+    container_name: ft-telegram-commander
+    env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./user_data:/app/user_data
+      - .:/app/project
+    depends_on:
+      - stratA
+      - stratB
+      - waveHyperNW
+    restart: unless-stopped
+
+volumes:
+  redis_data:
