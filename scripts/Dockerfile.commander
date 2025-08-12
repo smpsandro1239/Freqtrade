@@ -11,13 +11,12 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.commander.txt .
 RUN pip install -r requirements.commander.txt
 
-COPY telegram_commander_clean.py .
+COPY telegram_commander_fixed_final.py .
 COPY freqtrade_stats.py .
 COPY strategy_controller.py .
 COPY enhanced_stats.py .
 COPY trade_notifier.py .
 COPY trend_predictor.py .
 COPY trading_commands.py .
-COPY start_telegram_with_notifications.py .
 
-CMD ["python", "start_telegram_with_notifications.py"]
+CMD ["python", "telegram_commander_fixed_final.py"]
