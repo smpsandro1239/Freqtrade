@@ -60,6 +60,12 @@ STRATEGIES = {
         'container': 'ft-multiTimeframe',
         'config': 'user_data/configs/multiTimeframe.json',
         'description': 'Multi-Timeframe Analysis (1m/5m/15m/1h) - 1m'
+    },
+    'waveEnhanced': {
+        'name': 'WaveHyperNW Enhanced',
+        'container': 'ft-waveEnhanced',
+        'config': 'user_data/configs/waveHyperNWEnhanced.json',
+        'description': 'Enhanced WaveTrend + Nadaraya-Watson - 5m'
     }
 }
 

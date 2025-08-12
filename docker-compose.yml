@@ -66,6 +66,14 @@ services:
       --config user_data/configs/multiTimeframe.json
       --strategy MultiTimeframeStrategy
 
+  waveEnhanced:
+    <<: *common
+    container_name: ft-waveEnhanced
+    command: >
+      trade
+      --config user_data/configs/waveHyperNWEnhanced.json
+      --strategy WaveHyperNWEnhanced
+
   telegram_bot:
     build:
       context: ./scripts
@@ -123,6 +131,7 @@ services:
       - waveHyperNW
       - mlStrategy
       - multiTimeframe
+      - waveEnhanced
     restart: unless-stopped
 
 volumes:

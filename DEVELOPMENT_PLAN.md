@@ -74,9 +74,10 @@
 - Documentação completa
 - Scripts de instalação automatizada
 - **ETAPA 1.1**: Estratégia ML-Based ✅ CONCLUÍDA
+- **ETAPA 1.2**: Estratégia Multi-Timeframe ✅ CONCLUÍDA
 
 ### **🔄 EM DESENVOLVIMENTO:**
-- **ETAPA 1.2**: Estratégia Multi-Timeframe (INICIANDO)
+- **ETAPA 1.3**: Melhorias na WaveHyperNW Strategy (INICIANDO)
 
 ### **⏳ PENDENTE:**
 - Todas as outras etapas conforme ordem de prioridade
