@@ -21,13 +21,24 @@ Atualizados os arquivos:
 
 ### 📦 **Instalação da Biblioteca C**
 
-Adicionado passo para instalar a biblioteca TA-Lib antes do `pip install`:
+**Problema identificado:** `libta-lib-dev` não está disponível no Ubuntu 24.04 (Noble).
+
+**Solução implementada:** Instalação do TA-Lib a partir do código fonte:
 
 ```yaml
-- name: Install TA-Lib system dependency
+- name: Install TA-Lib dependencies
   run: |
     sudo apt-get update
-    sudo apt-get install -y build-essential libta-lib-dev
+    sudo apt-get install -y build-essential wget
+    
+- name: Install TA-Lib from source
+  run: |
+    wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+    tar -xzf ta-lib-0.4.0-src.tar.gz
+    cd ta-lib/
+    ./configure --prefix=/usr
+    make
+    sudo make install
     
 - name: Install dependencies
   run: |
@@ -131,28 +142,27 @@ jobs:
 
 ## 💡 **Alternativas Consideradas**
 
-### 1. **Compilação Manual**
+### 1. **Pacote do Sistema (Tentativa inicial)**
 ```yaml
-# Mais lenta, mas funciona
-- name: Build TA-Lib from source
-  run: |
-    wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-    tar -xzf ta-lib-0.4.0-src.tar.gz
-    cd ta-lib/
-    ./configure --prefix=/usr
-    make && sudo make install
-```
-
-### 2. **Wheel Pré-compilado**
-```yaml
-# Específico para versão do Python
-pip install TA-Lib-cp311
-```
-
-### 3. **Pacote do Sistema (Escolhida)**
-```yaml
-# Mais eficiente e confiável
+# Não funciona no Ubuntu 24.04 - pacote não existe
 sudo apt-get install -y libta-lib-dev
+pip install TA-Lib
+```
+
+### 2. **Wheel Pré-compilado (Alternativa rápida)**
+```yaml
+# Mais rápido, mas pode ter limitações
+pip install TA-Lib --prefer-binary
+```
+
+### 3. **Compilação do Código Fonte (Escolhida)**
+```yaml
+# Mais confiável e completa
+wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+tar -xzf ta-lib-0.4.0-src.tar.gz
+cd ta-lib/
+./configure --prefix=/usr
+make && sudo make install
 pip install TA-Lib
 ```
 
