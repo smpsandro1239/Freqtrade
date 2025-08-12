@@ -58,6 +58,14 @@ services:
       --config user_data/configs/mlStrategySimple.json
       --strategy MLStrategySimple
 
+  multiTimeframe:
+    <<: *common
+    container_name: ft-multiTimeframe
+    command: >
+      trade
+      --config user_data/configs/multiTimeframe.json
+      --strategy MultiTimeframeStrategy
+
   telegram_bot:
     build:
       context: ./scripts
@@ -114,6 +122,7 @@ services:
       - stratB
       - waveHyperNW
       - mlStrategy
+      - multiTimeframe
     restart: unless-stopped
 
 volumes:

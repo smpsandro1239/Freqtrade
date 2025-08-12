@@ -54,6 +54,12 @@ STRATEGIES = {
         'container': 'ft-mlStrategy',
         'config': 'user_data/configs/mlStrategySimple.json',
         'description': 'Machine Learning + Technical Analysis - 5m'
+    },
+    'multiTimeframe': {
+        'name': 'Multi-Timeframe Strategy',
+        'container': 'ft-multiTimeframe',
+        'config': 'user_data/configs/multiTimeframe.json',
+        'description': 'Multi-Timeframe Analysis (1m/5m/15m/1h) - 1m'
     }
 }
 

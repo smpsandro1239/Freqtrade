@@ -73,9 +73,10 @@
 - Sistema de monitoramento robusto
 - Documentação completa
 - Scripts de instalação automatizada
+- **ETAPA 1.1**: Estratégia ML-Based ✅ CONCLUÍDA
 
 ### **🔄 EM DESENVOLVIMENTO:**
-- **ETAPA 1.1**: Estratégia ML-Based (INICIANDO)
+- **ETAPA 1.2**: Estratégia Multi-Timeframe (INICIANDO)
 
 ### **⏳ PENDENTE:**
 - Todas as outras etapas conforme ordem de prioridade
