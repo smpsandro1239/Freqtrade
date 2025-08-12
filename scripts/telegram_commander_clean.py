@@ -18,7 +18,14 @@ from freqtrade_stats import FreqtradeStats
 from strategy_controller import StrategyController
 from enhanced_stats import enhanced_stats
 from trade_notifier import trade_notifier
-from trend_predictor import trend_predictor
+from trading_commands import trading_commands
+
+# Import trend_predictor with error handling
+try:
+    from trend_predictor import trend_predictor
+except ImportError as e:
+    logging.warning(f"Could not import trend_predictor: {e}")
+    trend_predictor = None
 
 # Configuração
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -847,6 +854,10 @@ async def show_predictions_menu(query):
 
 async def show_strategy_prediction(query, strategy_id: str):
     """Mostrar previsão detalhada de uma estratégia"""
+    if not trend_predictor:
+        await query.edit_message_text("❌ Sistema de previsão não disponível.")
+        return
+        
     try:
         if strategy_id == "all":
             message = "🔮 <b>ANÁLISE PREDITIVA GERAL</b>\n\n"
@@ -925,6 +936,10 @@ async def show_strategy_prediction(query, strategy_id: str):
 
 async def send_prediction_alert(query, strategy_id: str):
     """Enviar alerta de previsão"""
+    if not trend_predictor:
+        await query.edit_message_text("❌ Sistema de previsão não disponível.")
+        return
+        
     try:
         prediction = trend_predictor.generate_prediction(strategy_id)
         
@@ -973,6 +988,293 @@ async def send_prediction_alert(query, strategy_id: str):
         
     except Exception as e:
         await query.edit_message_text(f"❌ Erro ao enviar alerta: {str(e)}")
+
+async def show_trading_menu(query):
+    """Mostrar menu de trading manual"""
+    message = "💰 <b>TRADING MANUAL</b>\n\n"
+    message += "🎯 <b>Controle Total de Trading</b>\n"
+    message += "Execute operações manuais e ajuste estratégias\n\n"
+    message += "🔧 <b>Funcionalidades:</b>\n"
+    message += "• Compra/venda forçada de pares\n"
+    message += "• Ajuste dinâmico de sensibilidade\n"
+    message += "• Análise de posições abertas\n"
+    message += "• Recomendações baseadas no mercado\n\n"
+    message += "Escolha uma estratégia:\n"
+    
+    keyboard = []
+    for strategy_id, strategy_info in STRATEGIES.items():
+        keyboard.append([
+            InlineKeyboardButton(
+                f"💰 {strategy_info['name']}", 
+                callback_data=f"trading_{strategy_id}"
+            )
+        ])
+    
+    keyboard.append([
+        InlineKeyboardButton("📊 Análise Geral", callback_data="trading_analysis")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data="main_menu")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_strategy_trading(query, strategy_id: str):
+    """Mostrar opções de trading para uma estratégia"""
+    try:
+        strategy_info = STRATEGIES.get(strategy_id)
+        if not strategy_info:
+            await query.edit_message_text("❌ Estratégia não encontrada.")
+            return
+        
+        # Get trading status
+        status_message = trading_commands.format_trading_status(strategy_id)
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("🟢 Compra Forçada", callback_data=f"forcebuy_{strategy_id}"),
+                InlineKeyboardButton("🔴 Venda Forçada", callback_data=f"forcesell_{strategy_id}")
+            ],
+            [
+                InlineKeyboardButton("🔥 Modo Agressivo", callback_data=f"adjust_{strategy_id}_aggressive"),
+                InlineKeyboardButton("🛡️ Modo Conservador", callback_data=f"adjust_{strategy_id}_conservative")
+            ],
+            [
+                InlineKeyboardButton("⚖️ Modo Equilibrado", callback_data=f"adjust_{strategy_id}_balanced")
+            ],
+            [
+                InlineKeyboardButton("🔄 Atualizar Status", callback_data=f"trading_{strategy_id}"),
+                InlineKeyboardButton("📊 Ver Estatísticas", callback_data=f"stats_{strategy_id}")
+            ],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="trading_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(status_message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao obter status de trading: {str(e)}")
+
+async def show_forcebuy_menu(query, strategy_id: str):
+    """Mostrar menu de compra forçada"""
+    message = f"🟢 <b>COMPRA FORÇADA - {strategy_id}</b>\n\n"
+    message += "Selecione um par para compra forçada:\n\n"
+    message += "⚠️ <b>Atenção:</b> Esta operação irá executar uma compra imediatamente, independente dos sinais da estratégia.\n\n"
+    
+    # Common trading pairs
+    pairs = [
+        "BTC/USDT", "ETH/USDT", "BNB/USDT", "ADA/USDT", 
+        "DOT/USDT", "LINK/USDT", "SOL/USDT", "MATIC/USDT"
+    ]
+    
+    keyboard = []
+    for i in range(0, len(pairs), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(pairs):
+                pair = pairs[i + j]
+                row.append(InlineKeyboardButton(
+                    pair, 
+                    callback_data=f"buy_{strategy_id}_{pair.replace('/', '_')}"
+                ))
+        keyboard.append(row)
+    
+    keyboard.append([
+        InlineKeyboardButton("✏️ Par Personalizado", callback_data=f"custom_buy_{strategy_id}")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data=f"trading_{strategy_id}")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+async def show_forcesell_menu(query, strategy_id: str):
+    """Mostrar menu de venda forçada"""
+    try:
+        success, trades = trading_commands.get_open_trades(strategy_id)
+        
+        message = f"🔴 <b>VENDA FORÇADA - {strategy_id}</b>\n\n"
+        
+        if success and trades:
+            message += f"Posições abertas ({len(trades)}):\n\n"
+            
+            keyboard = []
+            for trade in trades[:8]:  # Max 8 trades
+                pair = trade['pair']
+                amount = trade['amount']
+                profit = trade.get('profit', 'N/A')
+                
+                button_text = f"{pair} ({amount}) - {profit}"
+                keyboard.append([InlineKeyboardButton(
+                    button_text, 
+                    callback_data=f"sell_{strategy_id}_{pair.replace('/', '_')}"
+                )])
+            
+            keyboard.append([
+                InlineKeyboardButton("🔴 Vender TODAS", callback_data=f"sell_all_{strategy_id}")
+            ])
+        else:
+            message += "💤 Nenhuma posição aberta para venda.\n\n"
+            keyboard = []
+        
+        keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data=f"trading_{strategy_id}")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro ao obter posições: {str(e)}")
+
+async def execute_force_buy(query, strategy_id: str, pair: str):
+    """Executar compra forçada"""
+    try:
+        pair = pair.replace('_', '/')
+        
+        # Show processing message
+        await query.edit_message_text(f"⏳ Executando compra forçada...\n\nPar: {pair}\nEstratégia: {strategy_id}")
+        
+        success, message = trading_commands.force_buy(strategy_id, pair)
+        
+        if success:
+            result_message = f"🟢 <b>COMPRA EXECUTADA COM SUCESSO!</b>\n\n{message}"
+        else:
+            result_message = f"❌ <b>ERRO NA COMPRA</b>\n\n{message}"
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Nova Compra", callback_data=f"forcebuy_{strategy_id}")],
+            [InlineKeyboardButton("📊 Ver Status", callback_data=f"trading_{strategy_id}")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="trading_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(result_message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
+
+async def execute_force_sell(query, strategy_id: str, pair: str):
+    """Executar venda forçada"""
+    try:
+        if pair == "all":
+            pair_text = "TODAS AS POSIÇÕES"
+        else:
+            pair = pair.replace('_', '/')
+            pair_text = pair
+        
+        # Show processing message
+        await query.edit_message_text(f"⏳ Executando venda forçada...\n\nPar: {pair_text}\nEstratégia: {strategy_id}")
+        
+        if pair == "TODAS AS POSIÇÕES":
+            # Get all open trades and sell them
+            success, trades = trading_commands.get_open_trades(strategy_id)
+            if success and trades:
+                results = []
+                for trade in trades:
+                    trade_pair = trade['pair']
+                    sell_success, sell_message = trading_commands.force_sell(strategy_id, trade_pair)
+                    results.append(f"• {trade_pair}: {'✅' if sell_success else '❌'}")
+                
+                result_message = f"🔴 <b>VENDA EM LOTE EXECUTADA</b>\n\n" + "\n".join(results)
+            else:
+                result_message = "❌ Nenhuma posição encontrada para venda"
+        else:
+            success, message = trading_commands.force_sell(strategy_id, pair)
+            
+            if success:
+                result_message = f"🔴 <b>VENDA EXECUTADA COM SUCESSO!</b>\n\n{message}"
+            else:
+                result_message = f"❌ <b>ERRO NA VENDA</b>\n\n{message}"
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Nova Venda", callback_data=f"forcesell_{strategy_id}")],
+            [InlineKeyboardButton("📊 Ver Status", callback_data=f"trading_{strategy_id}")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="trading_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(result_message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
+
+async def adjust_strategy_mode(query, strategy_id: str, mode: str):
+    """Ajustar modo da estratégia"""
+    try:
+        # Show processing message
+        mode_names = {
+            'aggressive': '🔥 AGRESSIVO',
+            'conservative': '🛡️ CONSERVADOR', 
+            'balanced': '⚖️ EQUILIBRADO'
+        }
+        
+        await query.edit_message_text(f"⏳ Ajustando estratégia para modo {mode_names[mode]}...")
+        
+        success, message = trading_commands.adjust_strategy_sensitivity(strategy_id, mode)
+        
+        if success:
+            result_message = f"✅ <b>ESTRATÉGIA AJUSTADA!</b>\n\n{message}"
+        else:
+            result_message = f"❌ <b>ERRO NO AJUSTE</b>\n\n{message}"
+        
+        keyboard = [
+            [InlineKeyboardButton("📊 Ver Status", callback_data=f"trading_{strategy_id}")],
+            [InlineKeyboardButton("🔄 Outro Ajuste", callback_data=f"trading_{strategy_id}")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="trading_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(result_message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro interno: {str(e)}")
+
+async def show_trading_analysis(query):
+    """Mostrar análise geral de trading"""
+    try:
+        message = "📊 <b>ANÁLISE GERAL DE TRADING</b>\n\n"
+        
+        # Get market analysis
+        analysis = trading_commands.get_market_analysis()
+        
+        message += f"📈 <b>Condições de Mercado:</b>\n"
+        message += f"• Volatilidade: {analysis['volatility']:.1%}\n"
+        message += f"• Tendência: {analysis['trend'].title()}\n"
+        message += f"• Volume: {analysis['volume']:.1%}\n\n"
+        
+        message += f"💡 <b>Recomendação Geral:</b>\n"
+        message += f"• Modo: {analysis['recommended_mode'].title()}\n"
+        message += f"• Motivo: {analysis['reason']}\n\n"
+        
+        # Strategy recommendations
+        message += f"🎯 <b>Recomendações por Estratégia:</b>\n"
+        
+        for strategy_id, strategy_info in STRATEGIES.items():
+            try:
+                status_msg = trading_commands.format_trading_status(strategy_id)
+                # Extract key info (simplified)
+                message += f"• {strategy_info['name']}: Modo {analysis['recommended_mode']}\n"
+            except:
+                message += f"• {strategy_info['name']}: Análise indisponível\n"
+        
+        message += f"\n⚠️ <b>Dicas de Trading:</b>\n"
+        if analysis['volatility'] > 0.6:
+            message += "• Alta volatilidade: Use stop-loss mais apertado\n"
+            message += "• Considere reduzir tamanho das posições\n"
+        elif analysis['trend'] == 'bullish':
+            message += "• Tendência de alta: Considere posições longas\n"
+            message += "• Aproveite pullbacks para entrar\n"
+        else:
+            message += "• Mercado lateral: Foque em scalping\n"
+            message += "• Aguarde breakouts para posições maiores\n"
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Atualizar Análise", callback_data="trading_analysis")],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="trading_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Erro na análise: {str(e)}")
 
 async def toggle_strategy_dry_run(query, strategy_id: str):
     """Alternar modo dry-run de uma estratégia"""
@@ -1213,6 +1515,38 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif data.startswith("alert_"):
             strategy_id = data.replace("alert_", "")
             await send_prediction_alert(query, strategy_id)
+        elif data == "trading_menu":
+            await show_trading_menu(query)
+        elif data.startswith("trading_"):
+            if data == "trading_analysis":
+                await show_trading_analysis(query)
+            else:
+                strategy_id = data.replace("trading_", "")
+                await show_strategy_trading(query, strategy_id)
+        elif data.startswith("forcebuy_"):
+            strategy_id = data.replace("forcebuy_", "")
+            await show_forcebuy_menu(query, strategy_id)
+        elif data.startswith("forcesell_"):
+            strategy_id = data.replace("forcesell_", "")
+            await show_forcesell_menu(query, strategy_id)
+        elif data.startswith("buy_"):
+            parts = data.split("_", 2)
+            strategy_id = parts[1]
+            pair = parts[2]
+            await execute_force_buy(query, strategy_id, pair)
+        elif data.startswith("sell_"):
+            parts = data.split("_", 2)
+            strategy_id = parts[1]
+            pair = parts[2]
+            await execute_force_sell(query, strategy_id, pair)
+        elif data.startswith("sell_all_"):
+            strategy_id = data.replace("sell_all_", "")
+            await execute_force_sell(query, strategy_id, "all")
+        elif data.startswith("adjust_"):
+            parts = data.split("_", 2)
+            strategy_id = parts[1]
+            mode = parts[2]
+            await adjust_strategy_mode(query, strategy_id, mode)
         else:
             await query.edit_message_text("❌ Comando não reconhecido.")
             
@@ -1370,6 +1704,161 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(message, parse_mode='HTML')
 
+async def forcebuy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /forcebuy - Compra forçada direta"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    # Parse arguments: /forcebuy strategy pair [amount]
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text(
+            "❌ Uso incorreto.\n\n"
+            "📝 <b>Formato:</b>\n"
+            "<code>/forcebuy [estratégia] [par] [quantidade]</code>\n\n"
+            "📋 <b>Exemplos:</b>\n"
+            "<code>/forcebuy stratA BTC/USDT</code>\n"
+            "<code>/forcebuy waveHyperNW ETH/USDT 0.1</code>\n\n"
+            "🎯 <b>Estratégias disponíveis:</b>\n" + 
+            "\n".join([f"• {sid}" for sid in STRATEGIES.keys()]),
+            parse_mode='HTML'
+        )
+        return
+    
+    strategy_id = args[0]
+    pair = args[1]
+    amount = float(args[2]) if len(args) > 2 else None
+    
+    if strategy_id not in STRATEGIES:
+        await update.message.reply_text(f"❌ Estratégia '{strategy_id}' não encontrada.")
+        return
+    
+    # Execute buy
+    await update.message.reply_text(f"⏳ Executando compra forçada...\n\nPar: {pair}\nEstratégia: {strategy_id}")
+    
+    success, message = trading_commands.force_buy(strategy_id, pair, amount)
+    
+    if success:
+        result = f"🟢 <b>COMPRA EXECUTADA!</b>\n\n{message}"
+    else:
+        result = f"❌ <b>ERRO NA COMPRA</b>\n\n{message}"
+    
+    await update.message.reply_text(result, parse_mode='HTML')
+
+async def forcesell_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /forcesell - Venda forçada direta"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    # Parse arguments: /forcesell strategy pair [amount]
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text(
+            "❌ Uso incorreto.\n\n"
+            "📝 <b>Formato:</b>\n"
+            "<code>/forcesell [estratégia] [par] [quantidade]</code>\n\n"
+            "📋 <b>Exemplos:</b>\n"
+            "<code>/forcesell stratA BTC/USDT</code>\n"
+            "<code>/forcesell waveHyperNW ETH/USDT 0.1</code>\n"
+            "<code>/forcesell stratA all</code> (vender tudo)\n\n"
+            "🎯 <b>Estratégias disponíveis:</b>\n" + 
+            "\n".join([f"• {sid}" for sid in STRATEGIES.keys()]),
+            parse_mode='HTML'
+        )
+        return
+    
+    strategy_id = args[0]
+    pair = args[1]
+    amount = float(args[2]) if len(args) > 2 and args[2] != 'all' else None
+    
+    if strategy_id not in STRATEGIES:
+        await update.message.reply_text(f"❌ Estratégia '{strategy_id}' não encontrada.")
+        return
+    
+    # Execute sell
+    if pair.lower() == 'all':
+        await update.message.reply_text(f"⏳ Executando venda de todas as posições...\nEstratégia: {strategy_id}")
+        
+        success, trades = trading_commands.get_open_trades(strategy_id)
+        if success and trades:
+            results = []
+            for trade in trades:
+                trade_pair = trade['pair']
+                sell_success, sell_message = trading_commands.force_sell(strategy_id, trade_pair)
+                results.append(f"• {trade_pair}: {'✅' if sell_success else '❌'}")
+            
+            result = f"🔴 <b>VENDA EM LOTE EXECUTADA</b>\n\n" + "\n".join(results)
+        else:
+            result = "❌ Nenhuma posição encontrada para venda"
+    else:
+        await update.message.reply_text(f"⏳ Executando venda forçada...\n\nPar: {pair}\nEstratégia: {strategy_id}")
+        
+        success, message = trading_commands.force_sell(strategy_id, pair, amount)
+        
+        if success:
+            result = f"🔴 <b>VENDA EXECUTADA!</b>\n\n{message}"
+        else:
+            result = f"❌ <b>ERRO NA VENDA</b>\n\n{message}"
+    
+    await update.message.reply_text(result, parse_mode='HTML')
+
+async def adjust_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Comando /adjust - Ajustar sensibilidade da estratégia"""
+    if not commander.is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Acesso negado.")
+        return
+    
+    # Parse arguments: /adjust strategy mode
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text(
+            "❌ Uso incorreto.\n\n"
+            "📝 <b>Formato:</b>\n"
+            "<code>/adjust [estratégia] [modo]</code>\n\n"
+            "📋 <b>Modos disponíveis:</b>\n"
+            "• <code>aggressive</code> - Mais trades, ROI menor\n"
+            "• <code>conservative</code> - Menos trades, ROI maior\n"
+            "• <code>balanced</code> - Equilibrado\n\n"
+            "📋 <b>Exemplos:</b>\n"
+            "<code>/adjust stratA aggressive</code>\n"
+            "<code>/adjust waveHyperNW conservative</code>\n\n"
+            "🎯 <b>Estratégias disponíveis:</b>\n" + 
+            "\n".join([f"• {sid}" for sid in STRATEGIES.keys()]),
+            parse_mode='HTML'
+        )
+        return
+    
+    strategy_id = args[0]
+    mode = args[1].lower()
+    
+    if strategy_id not in STRATEGIES:
+        await update.message.reply_text(f"❌ Estratégia '{strategy_id}' não encontrada.")
+        return
+    
+    if mode not in ['aggressive', 'conservative', 'balanced']:
+        await update.message.reply_text("❌ Modo inválido. Use: aggressive, conservative, balanced")
+        return
+    
+    # Execute adjustment
+    mode_names = {
+        'aggressive': '🔥 AGRESSIVO',
+        'conservative': '🛡️ CONSERVADOR', 
+        'balanced': '⚖️ EQUILIBRADO'
+    }
+    
+    await update.message.reply_text(f"⏳ Ajustando estratégia para modo {mode_names[mode]}...")
+    
+    success, message = trading_commands.adjust_strategy_sensitivity(strategy_id, mode)
+    
+    if success:
+        result = f"✅ <b>ESTRATÉGIA AJUSTADA!</b>\n\n{message}"
+    else:
+        result = f"❌ <b>ERRO NO AJUSTE</b>\n\n{message}"
+    
+    await update.message.reply_text(result, parse_mode='HTML')
+
 def main():
     """Função principal"""
     if not TOKEN:
@@ -1394,6 +1883,9 @@ def main():
     application.add_handler(CommandHandler("emergency", emergency_stop_command))
     application.add_handler(CommandHandler("quick", quick_status_command))
     application.add_handler(CommandHandler("predict", predict_command))
+    application.add_handler(CommandHandler("forcebuy", forcebuy_command))
+    application.add_handler(CommandHandler("forcesell", forcesell_command))
+    application.add_handler(CommandHandler("adjust", adjust_command))
     application.add_handler(CallbackQueryHandler(button_callback))
     
     application.add_error_handler(error_handler)

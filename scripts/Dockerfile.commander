@@ -17,6 +17,7 @@ COPY strategy_controller.py .
 COPY enhanced_stats.py .
 COPY trade_notifier.py .
 COPY trend_predictor.py .
+COPY trading_commands.py .
 COPY start_telegram_with_notifications.py .
 
 CMD ["python", "start_telegram_with_notifications.py"]
