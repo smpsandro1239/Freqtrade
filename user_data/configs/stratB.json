@@ -2,32 +2,107 @@
   "max_open_trades": 3,
   "stake_currency": "USDT",
   "stake_amount": 20,
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
   "dry_run": true,
+  "dry_run_wallet": 1000,
+  "cancel_open_orders_on_exit": false,
+  "trading_mode": "spot",
+  "margin_mode": "",
   "strategy": "SampleStrategyB",
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
   "exchange": {
     "name": "binance",
     "key": "",
     "secret": "",
     "ccxt_config": {},
-    "ccxt_async_config": {}
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "ADA/USDT",
+      "DOT/USDT",
+      "LINK/USDT"
+    ],
+    "pair_blacklist": []
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "edge": {
+    "enabled": false,
+    "process_throttle_secs": 3600,
+    "calculate_since_number_of_days": 7,
+    "allowed_risk": 0.01,
+    "stoploss_range_min": -0.01,
+    "stoploss_range_max": -0.1,
+    "stoploss_range_step": -0.01,
+    "minimum_winrate": 0.60,
+    "minimum_expectancy": 0.20,
+    "min_trade_number": 10,
+    "max_trade_duration_minute": 1440,
+    "remove_pumps": false
   },
   "telegram": {
     "enabled": true,
-    "token": "${TELEGRAM_TOKEN}",
-    "chat_id": "${TELEGRAM_CHAT_ID}"
-  },
-  "webhook": {
-    "enabled": true,
-    "url": "http://telegram_bot:8080/webhook",
-    "webhookentry": {
-      "value1": "{pair}",
-      "value2": "{stake_amount}",
-      "value3": "{limit}"
+    "token": "7407762395:AAEldw2--6fTrLu16Qpvwcposy3eaUp2Qqs",
+    "chat_id": "1555333079",
+    "notification_settings": {
+      "status": "on",
+      "warning": "on",
+      "startup": "on",
+      "entry": "on",
+      "entry_fill": "on",
+      "entry_cancel": "on",
+      "exit": "on",
+      "exit_fill": "on",
+      "exit_cancel": "on",
+      "protection_trigger": "on",
+      "protection_trigger_global": "on",
+      "show_candle": "off",
+      "strategy_msg": "on"
     },
-    "webhookexit": {
-      "value1": "{pair}",
-      "value2": "{profit_amount}",
-      "value3": "{profit_ratio}"
-    }
+    "reload": true,
+    "balance_dust_level": 0.01
+  },
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8082,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "stratB_secret_key",
+    "ws_token": "stratB_ws_token",
+    "CORS_origins": [],
+    "username": "stratB",
+    "password": "stratB123"
+  },
+  "bot_name": "StrategyB",
+  "initial_state": "running",
+  "force_entry_enable": true,
+  "internals": {
+    "process_throttle_secs": 5
   }
 }
