@@ -1,41 +1,38 @@
 {
-  "max_open_trades": 6,
-  "stake_currency": "USDT",
-  "stake_amount": 50,
-  "tradable_balance_ratio": 0.99,
-  "fiat_display_currency": "USD",
   "dry_run": true,
-  "dry_run_wallet": 1000,
-  "cancel_open_orders_on_exit": false,
-  "trading_mode": "spot",
-  "margin_mode": "",
+  "stake_amount": 20,
+  "max_open_trades": 6,
+  "minimal_roi": {
+    "0": 0.04,
+    "5": 0.03,
+    "10": 0.02,
+    "15": 0.01,
+    "30": 0.001
+  },
+  "stoploss": -0.08,
+  "trailing_stop": true,
+  "trailing_stop_positive": 0.02,
+  "trailing_stop_positive_offset": 0.03,
+  "trailing_only_offset_is_reached": true,
   "unfilledtimeout": {
-    "entry": 10,
-    "exit": 10,
-    "exit_timeout_count": 0,
-    "unit": "minutes"
+    "buy": 10,
+    "sell": 30
   },
-  "entry_pricing": {
-    "price_side": "same",
-    "use_order_book": true,
-    "order_book_top": 1,
-    "price_last_balance": 0.0,
-    "check_depth_of_market": {
-      "enabled": false,
-      "bids_to_ask_delta": 1
-    }
-  },
-  "exit_pricing": {
-    "price_side": "same",
-    "use_order_book": true,
-    "order_book_top": 1
+  "order_types": {
+    "buy": "limit",
+    "sell": "limit",
+    "emergencysell": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": false
   },
   "exchange": {
     "name": "binance",
-    "key": "",
-    "secret": "",
-    "ccxt_config": {},
-    "ccxt_async_config": {},
+    "key": "${EXCHANGE_KEY}",
+    "secret": "${EXCHANGE_SECRET}",
+    "ccxt_config": {
+      "enableRateLimit": true,
+      "rateLimit": 200
+    },
     "pair_whitelist": [
       "BTC/USDT",
       "ETH/USDT",
@@ -43,87 +40,43 @@
       "ADA/USDT",
       "DOT/USDT",
       "LINK/USDT",
-      "SOL/USDT",
-      "MATIC/USDT"
+      "LTC/USDT",
+      "BCH/USDT",
+      "XRP/USDT",
+      "EOS/USDT"
     ],
-    "pair_blacklist": [
-      ".*_PREMIUM",
-      ".*_BEAR",
-      ".*_BULL"
-    ]
+    "pair_blacklist": []
   },
   "pairlists": [
     {
       "method": "StaticPairList"
     }
   ],
-  "edge": {
-    "enabled": false,
-    "process_throttle_secs": 3600,
-    "calculate_since_number_of_days": 7,
-    "allowed_risk": 0.01,
-    "stoploss_range_min": -0.01,
-    "stoploss_range_max": -0.1,
-    "stoploss_range_step": -0.01,
-    "minimum_winrate": 0.6,
-    "minimum_expectancy": 0.2,
-    "min_trade_number": 10,
-    "max_trade_duration_minute": 1440,
-    "remove_pumps": false
-  },
+  "protections": [
+    {
+      "method": "StoplossGuard",
+      "lookback_period_candles": 60,
+      "trade_limit": 4,
+      "stop_duration_candles": 60,
+      "only_per_pair": false
+    },
+    {
+      "method": "CooldownPeriod",
+      "stop_duration_candles": 20
+    }
+  ],
   "telegram": {
     "enabled": true,
     "token": "${TELEGRAM_TOKEN}",
     "chat_id": "${TELEGRAM_CHAT_ID}",
     "notification_settings": {
-      "status": "silent",
+      "status": "on",
       "warning": "on",
       "startup": "on",
-      "entry": "on",
-      "entry_cancel": "on",
-      "entry_fill": "on",
-      "exit": {
-        "roi": "on",
-        "emergency_exit": "on",
-        "force_exit": "on",
-        "exit_signal": "on",
-        "trailing_stop_loss": "on",
-        "stop_loss": "on",
-        "stoploss_on_exchange": "on",
-        "custom_exit": "on"
-      },
-      "exit_cancel": "on",
-      "exit_fill": "on",
-      "protection_trigger": "on",
-      "protection_trigger_global": "on"
-    },
-    "reload": true,
-    "balance_dust_level": 0.01
-  },
-  "webhook": {
-    "enabled": true,
-    "url": "http://telegram_bot:8080/webhook",
-    "webhookentry": {
-      "value1": "{pair}",
-      "value2": "{stake_amount}",
-      "value3": "{limit}",
-      "value4": "{enter_tag}"
-    },
-    "webhookexit": {
-      "value1": "{pair}",
-      "value2": "{profit_amount}",
-      "value3": "{profit_ratio}",
-      "value4": "{exit_reason}"
-    },
-    "webhookentrycancel": {
-      "value1": "{pair}",
-      "value2": "{limit}",
-      "value3": "{cancel_reason}"
-    },
-    "webhookexitcancel": {
-      "value1": "{pair}",
-      "value2": "{limit}",
-      "value3": "{cancel_reason}"
+      "buy": "on",
+      "sell": "on",
+      "buy_cancel": "on",
+      "sell_cancel": "on"
     }
   },
   "api_server": {
@@ -132,23 +85,18 @@
     "listen_port": 8083,
     "verbosity": "error",
     "enable_openapi": false,
-    "jwt_secret_key": "waveHyperNW_secret_key",
-    "ws_token": "waveHyperNW_ws_token",
+    "jwt_secret_key": "${DASHBOARD_SECRET_KEY}",
     "CORS_origins": [],
-    "username": "waveHyperNW",
-    "password": "waveHyperNW123"
+    "username": "${DASHBOARD_USERNAME}",
+    "password": "${DASHBOARD_PASSWORD}"
   },
-  "bot_name": "WaveHyperNW",
+  "bot_name": "FreqTrade-MultiStrategy",
   "initial_state": "running",
   "force_entry_enable": true,
-  "bot_name": "WaveHyperNW_Otimizada",
-  "initial_state": "running",
-  "force_entry_enable": false,
   "internals": {
     "process_throttle_secs": 5
   },
+  "timeframe": "5m",
   "strategy": "WaveHyperNWStrategy",
-  "strategy_path": "user_data/strategies/",
-  "db_url": "sqlite:///tradesv3.sqlite",
   "user_data_dir": "user_data"
 }
