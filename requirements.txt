@@ -1,0 +1,25 @@
+# FreqTrade Multi-Strategy - Dependências Python
+# Instale com: pip install -r requirements.txt
+
+# Core dependencies
+python-dotenv==1.0.0
+aiohttp==3.9.1
+asyncio-mqtt==0.16.1
+
+# Telegram bot
+python-telegram-bot==20.7
+
+# Data processing
+pandas==2.1.4
+numpy==1.24.3
+
+# Docker integration
+docker==6.1.3
+
+# Validation and testing
+requests==2.31.0
+pydantic==2.5.2
+
+# Optional: For advanced features
+redis==5.0.1
+schedule==1.2.0
