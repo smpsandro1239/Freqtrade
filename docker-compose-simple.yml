@@ -1,0 +1,90 @@
+x-common: &common
+  image: freqtradeorg/freqtrade:stable
+  volumes:
+    - ./user_data:/freqtrade/user_data
+    - ./.env:/freqtrade/.env:ro
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    - redis
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  stratA:
+    <<: *common
+    container_name: ft-stratA
+    ports:
+      - "8081:8080"
+    command: >
+      trade
+      --config user_data/configs/stratA.json
+      --strategy SampleStrategyA
+
+  stratB:
+    <<: *common
+    container_name: ft-stratB
+    ports:
+      - "8082:8080"
+    command: >
+      trade
+      --config user_data/configs/stratB.json
+      --strategy SampleStrategyB
+
+  waveHyperNW:
+    <<: *common
+    container_name: ft-waveHyperNW
+    ports:
+      - "8083:8080"
+    command: >
+      trade
+      --config user_data/configs/waveHyperNW.json
+      --strategy WaveHyperNWStrategy
+
+  mlStrategy:
+    <<: *common
+    container_name: ft-mlStrategy
+    ports:
+      - "8084:8080"
+    command: >
+      trade
+      --config user_data/configs/mlStrategy.json
+      --strategy MLStrategy
+
+  mlStrategySimple:
+    <<: *common
+    container_name: ft-mlStrategySimple
+    ports:
+      - "8085:8080"
+    command: >
+      trade
+      --config user_data/configs/mlStrategySimple.json
+      --strategy MLStrategySimple
+
+  multiTimeframe:
+    <<: *common
+    container_name: ft-multiTimeframe
+    ports:
+      - "8086:8080"
+    command: >
+      trade
+      --config user_data/configs/multiTimeframe.json
+      --strategy MultiTimeframeStrategy
+
+  waveEnhanced:
+    <<: *common
+    container_name: ft-waveEnhanced
+    ports:
+      - "8087:8080"
+    command: >
+      trade
+      --config user_data/configs/waveHyperNWEnhanced.json
+      --strategy WaveHyperNWEnhanced
+
+volumes:
+  redis_data:

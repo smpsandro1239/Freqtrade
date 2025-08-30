@@ -15,8 +15,25 @@
   "trailing_stop_positive_offset": 0.03,
   "trailing_only_offset_is_reached": true,
   "unfilledtimeout": {
-    "buy": 10,
-    "sell": 30
+    "entry": 10,
+    "exit": 30,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
   },
   "order_types": {
     "buy": "limit",
@@ -52,19 +69,6 @@
       "method": "StaticPairList"
     }
   ],
-  "protections": [
-    {
-      "method": "StoplossGuard",
-      "lookback_period_candles": 60,
-      "trade_limit": 4,
-      "stop_duration_candles": 60,
-      "only_per_pair": false
-    },
-    {
-      "method": "CooldownPeriod",
-      "stop_duration_candles": 20
-    }
-  ],
   "telegram": {
     "enabled": true,
     "token": "${TELEGRAM_TOKEN}",
@@ -73,16 +77,16 @@
       "status": "on",
       "warning": "on",
       "startup": "on",
-      "buy": "on",
-      "sell": "on",
-      "buy_cancel": "on",
-      "sell_cancel": "on"
+      "entry": "on",
+      "exit": "on",
+      "entry_cancel": "on",
+      "exit_cancel": "on"
     }
   },
   "api_server": {
     "enabled": true,
     "listen_ip_address": "0.0.0.0",
-    "listen_port": 8081,
+    "listen_port": 8080,
     "verbosity": "error",
     "enable_openapi": false,
     "jwt_secret_key": "${DASHBOARD_SECRET_KEY}",
@@ -97,5 +101,6 @@
     "process_throttle_secs": 5
   },
   "timeframe": "15m",
-  "strategy": "SampleStrategyA"
+  "strategy": "SampleStrategyA",
+  "stake_currency": "USDT"
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🔒 Setup Seguro de Credenciais - FreqTrade Multi-Strategy
+ Setup Seguro de Credenciais - FreqTrade Multi-Strategy
 Configura credenciais de forma segura sem expor dados sensíveis
 """
 
@@ -46,14 +46,14 @@ def validate_chat_id(chat_id):
 
 def setup_credentials():
     """Configura credenciais de forma segura"""
-    print("🔒 SETUP SEGURO DE CREDENCIAIS - FreqTrade Multi-Strategy")
+    print(" SETUP SEGURO DE CREDENCIAIS - FreqTrade Multi-Strategy")
     print("=" * 60)
     print()
     
     env_file = Path(".env")
     
     if not env_file.exists():
-        print("❌ Arquivo .env não encontrado!")
+        print(" Arquivo .env não encontrado!")
         return False
     
     # Ler template atual
@@ -80,7 +80,7 @@ def setup_credentials():
     exchange_secret = get_secure_input("Secret Key da Exchange: ", is_password=True)
     
     if not exchange_key or not exchange_secret:
-        print("❌ Chaves da exchange são obrigatórias!")
+        print(" Chaves da exchange são obrigatórias!")
         return False
     
     # 2. Telegram Configuration
@@ -97,13 +97,13 @@ def setup_credentials():
     telegram_token = get_secure_input("Token do Bot Telegram: ")
     
     if not validate_telegram_token(telegram_token):
-        print("❌ Token do Telegram inválido! Formato: 123456789:ABC-DEF...")
+        print(" Token do Telegram inválido! Formato: 123456789:ABC-DEF...")
         return False
     
     telegram_chat_id = get_secure_input("Seu Chat ID do Telegram: ")
     
     if not validate_chat_id(telegram_chat_id):
-        print("❌ Chat ID inválido! Deve ser um número.")
+        print(" Chat ID inválido! Deve ser um número.")
         return False
     
     # 3. Dashboard Configuration
@@ -114,14 +114,14 @@ def setup_credentials():
     dashboard_password = get_secure_input("Password do Dashboard: ", is_password=True)
     
     if not dashboard_password or len(dashboard_password) < 8:
-        print("❌ Password deve ter pelo menos 8 caracteres!")
+        print(" Password deve ter pelo menos 8 caracteres!")
         return False
     
     # Gerar chave secreta segura
     dashboard_secret = generate_secure_key(64)
     
     # 4. Aplicar configurações
-    print("\n🔧 4. APLICANDO CONFIGURAÇÕES")
+    print("\n 4. APLICANDO CONFIGURAÇÕES")
     print("-" * 30)
     
     # Substituir valores no arquivo .env
@@ -145,7 +145,7 @@ def setup_credentials():
     
     print("✅ Credenciais configuradas com sucesso!")
     print()
-    print("🔒 IMPORTANTE - SEGURANÇA:")
+    print(" IMPORTANTE - SEGURANÇA:")
     print("   ✅ Arquivo .env foi atualizado")
     print("   ✅ Credenciais NÃO serão commitadas (protegido pelo .gitignore)")
     print("   ✅ Chave secreta do dashboard foi gerada automaticamente")
@@ -163,11 +163,11 @@ def main():
         if setup_credentials():
             print("🎉 Setup concluído com sucesso!")
         else:
-            print("❌ Setup falhou. Tente novamente.")
+            print(" Setup falhou. Tente novamente.")
     except KeyboardInterrupt:
         print("\n\n⚠️  Setup cancelado pelo usuário.")
     except Exception as e:
-        print(f"\n❌ Erro durante o setup: {e}")
+        print(f"\n Erro durante o setup: {e}")
 
 if __name__ == "__main__":
     main()

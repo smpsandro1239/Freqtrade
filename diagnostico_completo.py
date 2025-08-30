@@ -12,7 +12,7 @@ from datetime import datetime
 
 def print_section(title):
     print(f"\n{'='*60}")
-    print(f"🔍 {title}")
+    print(f" {title}")
     print('='*60)
 
 def check_docker_status():
@@ -23,7 +23,7 @@ def check_docker_status():
         # Verificar se Docker está rodando
         result = subprocess.run(['docker', 'ps'], capture_output=True, text=True)
         if result.returncode != 0:
-            print("❌ Docker não está rodando ou não está instalado")
+            print(" Docker não está rodando ou não está instalado")
             return False
         
         # Listar containers
@@ -41,12 +41,12 @@ def check_docker_status():
                 print(f"✅ {container} - Encontrado")
                 found.append(container)
             else:
-                print(f"❌ {container} - Não encontrado")
+                print(f" {container} - Não encontrado")
         
         return len(found) > 0
         
     except Exception as e:
-        print(f"❌ Erro ao verificar Docker: {e}")
+        print(f" Erro ao verificar Docker: {e}")
         return False
 
 def check_container_logs():
@@ -65,9 +65,9 @@ def check_container_logs():
                 if result.stderr:
                     print("STDERR:", result.stderr)
             else:
-                print(f"❌ Erro ao obter logs de {container}")
+                print(f" Erro ao obter logs de {container}")
         except Exception as e:
-            print(f"❌ Erro: {e}")
+            print(f" Erro: {e}")
 
 def check_api_endpoints():
     """Verificar endpoints das APIs"""
@@ -86,14 +86,14 @@ def check_api_endpoints():
     working_apis = []
     
     for name, url in apis.items():
-        print(f"\n🔍 Testando {name} ({url})...")
+        print(f"\n Testando {name} ({url})...")
         
         # Testar ping
         try:
             response = requests.get(f"{url}/api/v1/ping", timeout=5)
             print(f"   Ping: {response.status_code}")
         except Exception as e:
-            print(f"   Ping: ❌ {e}")
+            print(f"   Ping:  {e}")
         
         # Testar página principal
         try:
@@ -102,11 +102,12 @@ def check_api_endpoints():
             if response.status_code == 200:
                 working_apis.append(name)
         except Exception as e:
-            print(f"   Home: ❌ {e}")
+            print(f"   Home:  {e}")
     
     print(f"\n📊 APIs funcionando: {len(working_apis)}/{len(apis)}")
-    return working_apisdef che
-ck_config_files():
+    return working_apis
+
+def check_config_files():
     """Verificar arquivos de configuração"""
     print_section("CONFIGURAÇÕES")
     
@@ -121,10 +122,10 @@ ck_config_files():
     ]
     
     for config_file in configs:
-        print(f"\n🔍 Verificando {config_file}...")
+        print(f"\n Verificando {config_file}...")
         
         if not os.path.exists(config_file):
-            print(f"   ❌ Arquivo não existe")
+            print(f"    Arquivo não existe")
             continue
         
         try:
@@ -149,12 +150,12 @@ ck_config_files():
                 api = config['api_server']
                 enabled = api.get('enabled', False)
                 port = api.get('listen_port', 'N/A')
-                print(f"   API: {'✅' if enabled else '❌'} Enabled, Port: {port}")
+                print(f"   API: {'✅' if enabled else ''} Enabled, Port: {port}")
             
         except json.JSONDecodeError as e:
-            print(f"   ❌ JSON inválido: {e}")
+            print(f"    JSON inválido: {e}")
         except Exception as e:
-            print(f"   ❌ Erro: {e}")
+            print(f"    Erro: {e}")
 
 def check_strategy_files():
     """Verificar arquivos de estratégia"""
@@ -171,10 +172,10 @@ def check_strategy_files():
     ]
     
     for strategy_file in strategies:
-        print(f"\n🔍 Verificando {strategy_file}...")
+        print(f"\n Verificando {strategy_file}...")
         
         if not os.path.exists(strategy_file):
-            print(f"   ❌ Arquivo não existe")
+            print(f"    Arquivo não existe")
             continue
         
         try:
@@ -188,7 +189,7 @@ def check_strategy_files():
                 print(f"   ⚠️ Pode não ser uma estratégia válida")
                 
         except Exception as e:
-            print(f"   ❌ Erro ao ler: {e}")
+            print(f"    Erro ao ler: {e}")
 
 def check_ports():
     """Verificar se as portas estão sendo usadas"""
@@ -201,18 +202,18 @@ def check_ports():
             response = requests.get(f"http://127.0.0.1:{port}", timeout=2)
             print(f"✅ Porta {port}: Respondendo (HTTP {response.status_code})")
         except requests.exceptions.ConnectionError:
-            print(f"❌ Porta {port}: Conexão recusada")
+            print(f" Porta {port}: Conexão recusada")
         except requests.exceptions.Timeout:
             print(f"⏰ Porta {port}: Timeout")
         except Exception as e:
-            print(f"❌ Porta {port}: {e}")
+            print(f" Porta {port}: {e}")
 
 def generate_fix_script():
     """Gerar script de correção"""
     print_section("GERANDO SCRIPT DE CORREÇÃO")
     
     fix_script = """@echo off
-echo 🔧 SCRIPT DE CORREÇÃO AUTOMÁTICA
+echo  SCRIPT DE CORREÇÃO AUTOMÁTICA
 echo.
 
 echo 1. Parando containers...
@@ -234,7 +235,7 @@ echo ✅ Correção concluída!
 pause
 """
     
-    with open('corrigir_sistema.bat', 'w') as f:
+    with open('corrigir_sistema.bat', 'w', encoding='utf-8') as f:
         f.write(fix_script)
     
     print("✅ Script 'corrigir_sistema.bat' criado")
@@ -260,9 +261,9 @@ def main():
         print(f"✅ {len(working_apis)} APIs respondendo")
     elif len(working_apis) >= 3:
         print("⚠️ Sistema parcialmente funcional")
-        print(f"🔧 {len(working_apis)} APIs funcionando, algumas precisam de atenção")
+        print(f" {len(working_apis)} APIs funcionando, algumas precisam de atenção")
     else:
-        print("❌ Sistema com problemas críticos")
+        print(" Sistema com problemas críticos")
         print("🚨 Poucas ou nenhuma API funcionando")
         generate_fix_script()
     

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🎮 Demo do Sistema FreqTrade Multi-Strategy
+ Demo do Sistema FreqTrade Multi-Strategy
 Demonstração completa sem necessidade de credenciais reais
 """
 
@@ -10,7 +10,7 @@ from datetime import datetime
 
 def demo_credentials_check():
     """Demonstração do sistema de credenciais"""
-    print("🔒 DEMO - SISTEMA DE CREDENCIAIS")
+    print(" DEMO - SISTEMA DE CREDENCIAIS")
     print("=" * 50)
     print()
     
@@ -39,7 +39,7 @@ def demo_strategies():
     for i, (name, desc) in enumerate(strategies.items(), 1):
         print(f"✅ {i}. {name}")
         print(f"   📊 {desc}")
-        print(f"   🔒 Modo: DRY-RUN (Simulação)")
+        print(f"    Modo: DRY-RUN (Simulação)")
         print()
 
 def demo_telegram_commands():
@@ -178,7 +178,7 @@ def demo_deployment():
 
 def main():
     """Função principal da demonstração"""
-    print("🎮 DEMO COMPLETO - FREQTRADE MULTI-STRATEGY")
+    print(" DEMO COMPLETO - FREQTRADE MULTI-STRATEGY")
     print("=" * 60)
     print()
     print("Este é um sistema completo de trading automatizado com:")

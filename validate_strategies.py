@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🔍 Validador de Estratégias - FreqTrade Multi-Strategy
+ Validador de Estratégias - FreqTrade Multi-Strategy
 Valida estratégias e configurações antes do deploy
 """
 
@@ -210,16 +210,16 @@ class StrategyValidator:
     
     def validate_all_strategies(self):
         """Valida todas as estratégias"""
-        print("🔍 VALIDANDO ESTRATÉGIAS")
+        print(" VALIDANDO ESTRATÉGIAS")
         print("-" * 40)
         
         if not self.strategies_path.exists():
-            print("❌ Pasta user_data/strategies não encontrada!")
+            print(" Pasta user_data/strategies não encontrada!")
             return
         
         strategy_files = list(self.strategies_path.glob("*.py"))
         if not strategy_files:
-            print("❌ Nenhuma estratégia encontrada!")
+            print(" Nenhuma estratégia encontrada!")
             return
         
         for strategy_file in strategy_files:
@@ -233,7 +233,7 @@ class StrategyValidator:
             if result['valid']:
                 print(f"   ✅ {result['class_name']} - {result.get('timeframe', 'N/A')}")
             else:
-                print(f"   ❌ Problemas encontrados:")
+                print(f"    Problemas encontrados:")
                 for issue in result['issues']:
                     print(f"      - {issue}")
         
@@ -241,16 +241,16 @@ class StrategyValidator:
     
     def validate_all_configs(self):
         """Valida todas as configurações"""
-        print("🔍 VALIDANDO CONFIGURAÇÕES")
+        print(" VALIDANDO CONFIGURAÇÕES")
         print("-" * 40)
         
         if not self.configs_path.exists():
-            print("❌ Pasta user_data/configs não encontrada!")
+            print(" Pasta user_data/configs não encontrada!")
             return
         
         config_files = list(self.configs_path.glob("*.json"))
         if not config_files:
-            print("❌ Nenhuma configuração encontrada!")
+            print(" Nenhuma configuração encontrada!")
             return
         
         for config_file in config_files:
@@ -262,7 +262,7 @@ class StrategyValidator:
                 dry_status = "DRY-RUN" if result['dry_run'] else "LIVE"
                 print(f"   ✅ {result['strategy']} - {result['stake_amount']} USDT ({dry_status})")
             else:
-                print(f"   ❌ Problemas encontrados:")
+                print(f"    Problemas encontrados:")
                 for issue in result['issues']:
                     print(f"      - {issue}")
         
@@ -288,7 +288,7 @@ class StrategyValidator:
                     stake = config_info.get('stake_amount', 'N/A')
                     print(f"   📋 {config}.json - {stake} USDT ({dry_status})")
             else:
-                print(f"❌ {strategy_name} ({class_name}) - SEM CONFIGURAÇÃO")
+                print(f" {strategy_name} ({class_name}) - SEM CONFIGURAÇÃO")
                 self.results['issues'].append(f"Estratégia {strategy_name} sem configuração")
         
         print()
@@ -315,7 +315,7 @@ class StrategyValidator:
         if critical_issues:
             print(f"\n🚨 PROBLEMAS CRÍTICOS ({len(critical_issues)}):")
             for issue in critical_issues:
-                print(f"   ❌ {issue}")
+                print(f"    {issue}")
         
         # Avisos de segurança
         live_configs = []
@@ -343,12 +343,12 @@ class StrategyValidator:
             print("🎉 VALIDAÇÃO COMPLETA - SISTEMA PRONTO!")
             return True
         else:
-            print("❌ VALIDAÇÃO INCOMPLETA - CORRIJA OS PROBLEMAS")
+            print(" VALIDAÇÃO INCOMPLETA - CORRIJA OS PROBLEMAS")
             return False
     
     def run_validation(self):
         """Executa validação completa"""
-        print("🔍 VALIDADOR DE ESTRATÉGIAS - FreqTrade Multi-Strategy")
+        print(" VALIDADOR DE ESTRATÉGIAS - FreqTrade Multi-Strategy")
         print("=" * 60)
         print()
         
@@ -370,7 +370,7 @@ def main():
             print("   2. Execute: .\run.ps1 dry")
             print("   3. Execute: .\run.ps1 status")
         else:
-            print("\n🔧 CORRIJA OS PROBLEMAS ANTES DE CONTINUAR")
+            print("\n CORRIJA OS PROBLEMAS ANTES DE CONTINUAR")
         
         sys.exit(0 if success else 1)
         
@@ -378,7 +378,7 @@ def main():
         print("\n\n⚠️  Validação cancelada pelo usuário.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Erro durante a validação: {e}")
+        print(f"\n Erro durante a validação: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

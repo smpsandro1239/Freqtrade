@@ -71,10 +71,10 @@ class SampleStrategyB(IStrategy):
         dataframe['rsi'] = ta.RSI(dataframe['close'], timeperiod=self.rsi_period.value)
         
         # MACD
-        macd = ta.MACD(dataframe['close'])
-        dataframe['macd'] = macd['macd']
-        dataframe['macdsignal'] = macd['macdsignal']
-        dataframe['macdhist'] = macd['macdhist']
+        macd_line, macd_signal, macd_hist = ta.MACD(dataframe['close'])
+        dataframe['macd'] = macd_line
+        dataframe['macdsignal'] = macd_signal
+        dataframe['macdhist'] = macd_hist
         
         # Bollinger Bands
         bollinger = ta.BBANDS(dataframe['close'], 

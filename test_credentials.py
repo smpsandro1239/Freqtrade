@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🧪 Teste Seguro de Credenciais - FreqTrade Multi-Strategy
+ Teste Seguro de Credenciais - FreqTrade Multi-Strategy
 Testa credenciais sem expor dados sensíveis
 """
 
@@ -22,12 +22,12 @@ class CredentialTester:
         
     def test_env_file(self):
         """Testa se arquivo .env existe e tem as variáveis necessárias"""
-        print("🔍 1. TESTANDO ARQUIVO .ENV")
+        print(" 1. TESTANDO ARQUIVO .ENV")
         print("-" * 30)
         
         env_file = Path(".env")
         if not env_file.exists():
-            print("❌ Arquivo .env não encontrado!")
+            print(" Arquivo .env não encontrado!")
             return False
             
         required_vars = [
@@ -49,7 +49,7 @@ class CredentialTester:
                 placeholder_vars.append(var)
         
         if missing_vars:
-            print(f"❌ Variáveis faltando: {', '.join(missing_vars)}")
+            print(f" Variáveis faltando: {', '.join(missing_vars)}")
             return False
             
         if placeholder_vars:
@@ -70,16 +70,16 @@ class CredentialTester:
         exchange_name = os.getenv('EXCHANGE_NAME')
         
         if not all([exchange_key, exchange_secret, exchange_name]):
-            print("❌ Credenciais da exchange incompletas")
+            print(" Credenciais da exchange incompletas")
             return False
             
         # Validações básicas de formato
         if len(exchange_key) < 20:
-            print("❌ API Key muito curta (deve ter pelo menos 20 caracteres)")
+            print(" API Key muito curta (deve ter pelo menos 20 caracteres)")
             return False
             
         if len(exchange_secret) < 20:
-            print("❌ Secret Key muito curta (deve ter pelo menos 20 caracteres)")
+            print(" Secret Key muito curta (deve ter pelo menos 20 caracteres)")
             return False
             
         if exchange_name not in ['binance', 'coinbase', 'kraken', 'bybit']:
@@ -99,12 +99,12 @@ class CredentialTester:
         chat_id = os.getenv('TELEGRAM_CHAT_ID')
         
         if not all([token, chat_id]):
-            print("❌ Credenciais do Telegram incompletas")
+            print(" Credenciais do Telegram incompletas")
             return False
             
         # Validar formato do token
         if ':' not in token or len(token) < 40:
-            print("❌ Token do Telegram inválido")
+            print(" Token do Telegram inválido")
             print("   Formato correto: 123456789:ABC-DEF...")
             return False
             
@@ -112,7 +112,7 @@ class CredentialTester:
         try:
             int(chat_id)
         except ValueError:
-            print("❌ Chat ID deve ser um número")
+            print(" Chat ID deve ser um número")
             return False
             
         print("✅ Formato das credenciais do Telegram OK")
@@ -127,7 +127,7 @@ class CredentialTester:
         
         token = os.getenv('TELEGRAM_TOKEN')
         if not token:
-            print("❌ Token do Telegram não configurado")
+            print(" Token do Telegram não configurado")
             return False
             
         try:
@@ -144,17 +144,17 @@ class CredentialTester:
                             print(f"   Nome: {bot_info.get('first_name', 'N/A')}")
                             return True
                         else:
-                            print("❌ Token do Telegram inválido")
+                            print(" Token do Telegram inválido")
                             return False
                     else:
-                        print(f"❌ Erro HTTP {response.status}")
+                        print(f" Erro HTTP {response.status}")
                         return False
                         
         except asyncio.TimeoutError:
-            print("❌ Timeout na conexão com Telegram")
+            print(" Timeout na conexão com Telegram")
             return False
         except Exception as e:
-            print(f"❌ Erro na conexão: {e}")
+            print(f" Erro na conexão: {e}")
             return False
     
     def test_dashboard_config(self):
@@ -167,15 +167,15 @@ class CredentialTester:
         password = os.getenv('DASHBOARD_PASSWORD')
         
         if not all([secret_key, username, password]):
-            print("❌ Configuração do dashboard incompleta")
+            print(" Configuração do dashboard incompleta")
             return False
             
         if len(secret_key) < 32:
-            print("❌ Chave secreta muito fraca (deve ter pelo menos 32 caracteres)")
+            print(" Chave secreta muito fraca (deve ter pelo menos 32 caracteres)")
             return False
             
         if len(password) < 8:
-            print("❌ Password muito fraca (deve ter pelo menos 8 caracteres)")
+            print(" Password muito fraca (deve ter pelo menos 8 caracteres)")
             return False
             
         print("✅ Configuração do dashboard OK")
@@ -186,7 +186,7 @@ class CredentialTester:
     
     def test_security_settings(self):
         """Testa configurações de segurança"""
-        print("\n🔒 6. TESTANDO CONFIGURAÇÕES DE SEGURANÇA")
+        print("\n 6. TESTANDO CONFIGURAÇÕES DE SEGURANÇA")
         print("-" * 40)
         
         dry_run = os.getenv('DEFAULT_DRY_RUN', 'true').lower()
@@ -206,7 +206,7 @@ class CredentialTester:
             else:
                 print(f"✅ Limite de perda diária: {max_loss}%")
         except ValueError:
-            print("❌ MAX_DAILY_LOSS_PERCENT deve ser um número")
+            print(" MAX_DAILY_LOSS_PERCENT deve ser um número")
             return False
             
         if emergency_stop == 'true':
@@ -218,7 +218,7 @@ class CredentialTester:
     
     async def run_all_tests(self):
         """Executa todos os testes"""
-        print("🧪 TESTE COMPLETO DE CREDENCIAIS")
+        print(" TESTE COMPLETO DE CREDENCIAIS")
         print("=" * 50)
         print()
         
@@ -247,8 +247,8 @@ class CredentialTester:
             print("   2. Ou execute: docker-compose up -d")
             return True
         else:
-            print(f"❌ {total - passed} teste(s) falharam de {total}")
-            print("🔧 Corrija os problemas antes de continuar")
+            print(f" {total - passed} teste(s) falharam de {total}")
+            print(" Corrija os problemas antes de continuar")
             return False
 
 async def main():
@@ -261,7 +261,7 @@ async def main():
         print("\n\n⚠️  Teste cancelado pelo usuário.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Erro durante os testes: {e}")
+        print(f"\n Erro durante os testes: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
