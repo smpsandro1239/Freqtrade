@@ -1244,8 +1244,625 @@ HTML_TEMPLATE = '''
             }
         }
         
-        // Continuar com as funções de criação de gráficos...
-        // (O resto do JavaScript será adicionado na próxima parte)
+        async function createAdvancedCharts(data) {
+            console.log('🎨 Criando gráficos avançados...');
+            
+            // Destruir gráficos existentes
+            Object.values(charts).forEach(chart => {
+                try {
+                    if (chart && chart.destroy) {
+                        chart.destroy();
+                    }
+                } catch (e) {
+                    console.warn('Erro ao destruir gráfico:', e);
+                }
+            });
+            charts = {};
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            try {
+                // Criar gráfico principal com sinais
+                await createAdvancedMainChart(data);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Criar indicadores
+                await createAdvancedRSIChart(data);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                await createAdvancedMACDChart(data);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                await createVolumeChart(data);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                await createCustomIndicatorChart(data);
+                
+                console.log('✅ Gráficos avançados criados');
+                
+            } catch (error) {
+                console.error('❌ Erro ao criar gráficos avançados:', error);
+                updateStatus('Error creating charts');
+            }
+        }
+        
+        async function createAdvancedMainChart(data) {
+            const ctx = document.getElementById('mainChart');
+            if (!ctx || !data.candlesticks) return;
+            
+            console.log('📊 Criando gráfico principal avançado...');
+            
+            // Dados de preço
+            const priceData = data.candlesticks.map(c => ({
+                x: new Date(c.time * 1000),
+                y: c.close
+            }));
+            
+            // Sinais de compra e venda
+            const buySignals = (data.signals || [])
+                .filter(s => s.signal === 'BUY')
+                .map(s => ({
+                    x: new Date(s.time * 1000),
+                    y: s.price
+                }));
+                
+            const sellSignals = (data.signals || [])
+                .filter(s => s.signal === 'SELL')
+                .map(s => ({
+                    x: new Date(s.time * 1000),
+                    y: s.price
+                }));
+            
+            // Médias móveis
+            const sma20Data = data.indicators?.SMA_20 ? 
+                data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.SMA_20[i]
+                })).filter(d => d.y !== null && !isNaN(d.y)) : [];
+                
+            const ema12Data = data.indicators?.EMA_12 ? 
+                data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.EMA_12[i]
+                })).filter(d => d.y !== null && !isNaN(d.y)) : [];
+            
+            // Bollinger Bands
+            const bbUpperData = data.indicators?.BB_UPPER ? 
+                data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.BB_UPPER[i]
+                })).filter(d => d.y !== null && !isNaN(d.y)) : [];
+                
+            const bbLowerData = data.indicators?.BB_LOWER ? 
+                data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.BB_LOWER[i]
+                })).filter(d => d.y !== null && !isNaN(d.y)) : [];
+            
+            const datasets = [
+                {
+                    label: 'Price',
+                    data: priceData,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                }
+            ];
+            
+            // Adicionar médias móveis se disponíveis
+            if (sma20Data.length > 0) {
+                datasets.push({
+                    label: 'SMA 20',
+                    data: sma20Data,
+                    borderColor: '#f093fb',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 0
+                });
+            }
+            
+            if (ema12Data.length > 0) {
+                datasets.push({
+                    label: 'EMA 12',
+                    data: ema12Data,
+                    borderColor: '#f5576c',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 0
+                });
+            }
+            
+            // Adicionar Bollinger Bands
+            if (bbUpperData.length > 0) {
+                datasets.push({
+                    label: 'BB Upper',
+                    data: bbUpperData,
+                    borderColor: 'rgba(255, 193, 7, 0.8)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                });
+            }
+            
+            if (bbLowerData.length > 0) {
+                datasets.push({
+                    label: 'BB Lower',
+                    data: bbLowerData,
+                    borderColor: 'rgba(255, 193, 7, 0.8)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                });
+            }
+            
+            // Adicionar sinais de compra
+            if (buySignals.length > 0) {
+                datasets.push({
+                    label: 'Buy Signals',
+                    data: buySignals,
+                    backgroundColor: '#48bb78',
+                    borderColor: '#38a169',
+                    pointStyle: 'triangle',
+                    pointRadius: 10,
+                    pointHoverRadius: 12,
+                    showLine: false,
+                    pointRotation: 0
+                });
+            }
+            
+            // Adicionar sinais de venda
+            if (sellSignals.length > 0) {
+                datasets.push({
+                    label: 'Sell Signals',
+                    data: sellSignals,
+                    backgroundColor: '#f56565',
+                    borderColor: '#e53e3e',
+                    pointStyle: 'triangle',
+                    pointRadius: 10,
+                    pointHoverRadius: 12,
+                    showLine: false,
+                    pointRotation: 180
+                });
+            }
+            
+            charts.main = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#e0e0e0',
+                                usePointStyle: true,
+                                padding: 15,
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e0e0e0',
+                            borderColor: '#667eea',
+                            borderWidth: 2,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            grid: { color: '#667eea', lineWidth: 0.5 },
+                            ticks: { 
+                                color: '#e0e0e0',
+                                maxTicksLimit: 8,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            grid: { color: '#667eea', lineWidth: 0.5 },
+                            ticks: { 
+                                color: '#e0e0e0',
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+            
+            document.getElementById('mainStatus').textContent = '✅ Active';
+            console.log('✅ Gráfico principal avançado criado');
+        }
+        
+        async function createAdvancedRSIChart(data) {
+            const ctx = document.getElementById('rsiChart');
+            if (!ctx || !data.indicators?.RSI) {
+                document.getElementById('rsiStatus').textContent = '❌ No data';
+                return;
+            }
+            
+            console.log('📊 Criando gráfico RSI avançado...');
+            
+            const rsiData = data.candlesticks.map((c, i) => ({
+                x: new Date(c.time * 1000),
+                y: data.indicators.RSI[i]
+            })).filter(d => d.y !== null && !isNaN(d.y));
+            
+            charts.rsi = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'RSI',
+                            data: rsiData,
+                            borderColor: '#9f7aea',
+                            backgroundColor: 'rgba(159, 122, 234, 0.2)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 4
+                        },
+                        {
+                            label: 'Overbought (70)',
+                            data: rsiData.map(d => ({ x: d.x, y: 70 })),
+                            borderColor: '#f56565',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Oversold (30)',
+                            data: rsiData.map(d => ({ x: d.x, y: 30 })),
+                            borderColor: '#48bb78',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            display: false 
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: '#667eea', lineWidth: 0.5 },
+                            ticks: { 
+                                color: '#e0e0e0',
+                                stepSize: 25,
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('rsiStatus').textContent = '✅ Active';
+            console.log('✅ Gráfico RSI avançado criado');
+        }
+        
+        async function createAdvancedMACDChart(data) {
+            const ctx = document.getElementById('macdChart');
+            if (!ctx || !data.indicators?.MACD) {
+                document.getElementById('macdStatus').textContent = '❌ No data';
+                return;
+            }
+            
+            console.log('📊 Criando gráfico MACD avançado...');
+            
+            const macdData = data.candlesticks.map((c, i) => ({
+                x: new Date(c.time * 1000),
+                y: data.indicators.MACD[i]
+            })).filter(d => d.y !== null && !isNaN(d.y));
+            
+            const signalData = data.indicators.MACD_SIGNAL ? 
+                data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.MACD_SIGNAL[i]
+                })).filter(d => d.y !== null && !isNaN(d.y)) : [];
+            
+            const histogramData = data.indicators.MACD_HISTOGRAM ? 
+                data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.MACD_HISTOGRAM[i]
+                })).filter(d => d.y !== null && !isNaN(d.y)) : [];
+            
+            const datasets = [
+                {
+                    label: 'MACD',
+                    data: macdData,
+                    borderColor: '#4fd1c7',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }
+            ];
+            
+            if (signalData.length > 0) {
+                datasets.push({
+                    label: 'Signal',
+                    data: signalData,
+                    borderColor: '#f093fb',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 0
+                });
+            }
+            
+            if (histogramData.length > 0) {
+                datasets.push({
+                    label: 'Histogram',
+                    data: histogramData,
+                    backgroundColor: histogramData.map(d => d.y >= 0 ? 'rgba(72, 187, 120, 0.7)' : 'rgba(245, 101, 101, 0.7)'),
+                    borderColor: 'transparent',
+                    type: 'bar',
+                    borderWidth: 0
+                });
+            }
+            
+            charts.macd = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            display: false 
+                        },
+                        y: {
+                            grid: { color: '#667eea', lineWidth: 0.5 },
+                            ticks: { 
+                                color: '#e0e0e0',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('macdStatus').textContent = '✅ Active';
+            console.log('✅ Gráfico MACD avançado criado');
+        }
+        
+        async function createVolumeChart(data) {
+            const ctx = document.getElementById('volumeChart');
+            if (!ctx || !data.candlesticks) {
+                document.getElementById('volumeStatus').textContent = '❌ No data';
+                return;
+            }
+            
+            console.log('📊 Criando gráfico de volume...');
+            
+            const volumeData = data.candlesticks.map(c => ({
+                x: new Date(c.time * 1000),
+                y: c.volume || 0
+            }));
+            
+            charts.volume = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    datasets: [{
+                        label: 'Volume',
+                        data: volumeData,
+                        backgroundColor: volumeData.map((_, i) => {
+                            if (i === 0) return 'rgba(102, 126, 234, 0.7)';
+                            const current = data.candlesticks[i].close;
+                            const previous = data.candlesticks[i-1].close;
+                            return current >= previous ? 
+                                'rgba(72, 187, 120, 0.7)' : 
+                                'rgba(245, 101, 101, 0.7)';
+                        }),
+                        borderColor: 'transparent',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            display: false 
+                        },
+                        y: {
+                            grid: { color: '#667eea', lineWidth: 0.5 },
+                            ticks: { 
+                                color: '#e0e0e0',
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('volumeStatus').textContent = '✅ Active';
+            console.log('✅ Gráfico de volume criado');
+        }
+        
+        async function createCustomIndicatorChart(data) {
+            const ctx = document.getElementById('customChart');
+            if (!ctx) {
+                document.getElementById('customStatus').textContent = '❌ No canvas';
+                return;
+            }
+            
+            console.log('📊 Criando gráfico de indicador customizado...');
+            
+            // Escolher indicador baseado na estratégia
+            let indicatorData = null;
+            let indicatorName = 'Custom';
+            let indicatorColor = '#667eea';
+            
+            if (data.indicators?.WAVETREND) {
+                indicatorData = data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.WAVETREND[i]
+                })).filter(d => d.y !== null && !isNaN(d.y));
+                indicatorName = 'WaveTrend';
+                indicatorColor = '#4fd1c7';
+            } else if (data.indicators?.STOCH_K) {
+                indicatorData = data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.STOCH_K[i]
+                })).filter(d => d.y !== null && !isNaN(d.y));
+                indicatorName = 'Stochastic %K';
+                indicatorColor = '#f093fb';
+            } else if (data.indicators?.CCI) {
+                indicatorData = data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.CCI[i]
+                })).filter(d => d.y !== null && !isNaN(d.y));
+                indicatorName = 'CCI';
+                indicatorColor = '#ff6b6b';
+            } else if (data.indicators?.ADX) {
+                indicatorData = data.candlesticks.map((c, i) => ({
+                    x: new Date(c.time * 1000),
+                    y: data.indicators.ADX[i]
+                })).filter(d => d.y !== null && !isNaN(d.y));
+                indicatorName = 'ADX';
+                indicatorColor = '#feca57';
+            }
+            
+            if (!indicatorData || indicatorData.length === 0) {
+                document.getElementById('customStatus').textContent = '❌ No data';
+                return;
+            }
+            
+            // Atualizar título do gráfico
+            const titleElement = document.querySelector('#customChart').parentElement.querySelector('.chart-title');
+            if (titleElement) {
+                titleElement.innerHTML = `<i class="fas fa-chart-area"></i> ${indicatorName}`;
+            }
+            
+            charts.custom = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: indicatorName,
+                        data: indicatorData,
+                        borderColor: indicatorColor,
+                        backgroundColor: `${indicatorColor}20`,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            display: false 
+                        },
+                        y: {
+                            grid: { color: '#667eea', lineWidth: 0.5 },
+                            ticks: { 
+                                color: '#e0e0e0',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('customStatus').textContent = '✅ Active';
+            console.log(`✅ Gráfico ${indicatorName} criado`);
+        }
+        
+        function updateTradingSignals(signals) {
+            const container = document.getElementById('signalsContent');
+            container.innerHTML = '';
+            
+            if (signals && signals.length > 0) {
+                // Mostrar os 8 sinais mais recentes
+                signals.slice(-8).forEach(signal => {
+                    const signalDiv = document.createElement('div');
+                    signalDiv.className = `signal-item signal-${signal.signal.toLowerCase()}`;
+                    
+                    const strengthBar = '█'.repeat(Math.floor(signal.strength * 5));
+                    const strengthPercent = (signal.strength * 100).toFixed(0);
+                    
+                    signalDiv.innerHTML = `
+                        <div class="signal-header">
+                            <div class="signal-type">${signal.signal}</div>
+                            <div class="signal-strength">${strengthBar} ${strengthPercent}%</div>
+                        </div>
+                        <div class="signal-price">$${signal.price.toFixed(4)}</div>
+                        <div class="signal-reasons">${signal.reasons.join(', ')}</div>
+                        <div style="font-size: 0.7em; opacity: 0.7; margin-top: 2px;">
+                            Conditions: ${signal.conditions_met}
+                        </div>
+                    `;
+                    
+                    container.appendChild(signalDiv);
+                });
+            } else {
+                container.innerHTML = '<div style="color: #a0aec0; font-size: 0.9em; text-align: center; padding: 20px;">No recent signals for this strategy</div>';
+            }
+        }
         
         function updateStatus(message) {
             ['mainStatus', 'rsiStatus', 'macdStatus', 'volumeStatus', 'customStatus'].forEach(id => {
